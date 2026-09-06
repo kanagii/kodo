@@ -1,0 +1,15 @@
+# Virtual environment
+venv/
+
+# Database
+db.sqlite3
+
+# Python cache
+__pycache__/
+*.pyc
+
+# Environment variables (for later, when you add Supabase credentials)
+.env
+
+# IDE
+.idea/

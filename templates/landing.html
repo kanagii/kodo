@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% block content %}
+  <h1>Welcome to Kodo</h1>
+  {% if user.is_authenticated %}
+    <p>Hi, {{ user.username }}! <a href="{% url 'logout' %}">Logout</a></p>
+  {% else %}
+    <a href="{% url 'login' %}">Login</a> | <a href="{% url 'register' %}">Register</a>
+  {% endif %}
+{% endblock %}
