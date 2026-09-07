@@ -1,9 +1,46 @@
 {% extends "base.html" %}
-{% block content %}
-  <h2>Login</h2>
-  <form method="post">
-    {% csrf_token %}
-    {{ form.as_p }}
-    <button type="submit">Login</button>
-  </form>
+{% block title %}Log in — Kodo{% endblock %}
+{% block body %}
+<div class="auth">
+  <div class="auth__brand">
+    <div class="auth__brand-top">
+      <a class="nav__logo" href="{% url 'landing' %}">kodo<span>.</span></a>
+    </div>
+    <div class="auth__brand-mid">
+      <h2>Pick up right where your last trace left off.</h2>
+      <p>Your saved sessions, trace history, and Big-O accuracy are waiting on your dashboard.</p>
+    </div>
+    <div class="auth__brand-bottom mono">arrays · linked lists · stacks · queues</div>
+  </div>
+
+  <div class="auth__panel">
+    <div class="auth__form">
+      <h1>Welcome back</h1>
+      <span class="auth__form-sub">Log in to continue tracing.</span>
+
+      {% if form.non_field_errors %}
+        <div class="form-error">
+          {% for error in form.non_field_errors %}{{ error }}{% endfor %}
+        </div>
+      {% endif %}
+
+      <form method="post" novalidate>
+        {% csrf_token %}
+        <div class="field">
+          <label for="{{ form.username.id_for_label }}">Username</label>
+          {{ form.username }}
+          {% for error in form.username.errors %}<span class="field__error">{{ error }}</span>{% endfor %}
+        </div>
+        <div class="field">
+          <label for="{{ form.password.id_for_label }}">Password</label>
+          {{ form.password }}
+          {% for error in form.password.errors %}<span class="field__error">{{ error }}</span>{% endfor %}
+        </div>
+        <button type="submit" class="btn btn--primary btn--block auth__submit">Log in</button>
+      </form>
+
+      <p class="auth__switch">New to Kodo? <a href="{% url 'register' %}">Create an account</a></p>
+    </div>
+  </div>
+</div>
 {% endblock %}

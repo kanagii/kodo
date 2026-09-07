@@ -1,9 +1,53 @@
 {% extends "base.html" %}
-{% block content %}
-  <h2>Register</h2>
-  <form method="post">
-    {% csrf_token %}
-    {{ form.as_p }}
-    <button type="submit">Register</button>
-  </form>
+{% block title %}Create an account — Kodo{% endblock %}
+{% block body %}
+<div class="auth">
+  <div class="auth__brand">
+    <div class="auth__brand-top">
+      <a class="nav__logo" href="{% url 'landing' %}">kodo<span>.</span></a>
+    </div>
+    <div class="auth__brand-mid">
+      <h2>Trace your own code, not a textbook demo.</h2>
+      <p>Guess the complexity, run the trace, and see exactly where your understanding and your code disagree.</p>
+    </div>
+    <div class="auth__brand-bottom mono">built for python · Node & Graph starter classes</div>
+  </div>
+
+  <div class="auth__panel">
+    <div class="auth__form">
+      <h1>Create your account</h1>
+      <span class="auth__form-sub">Start tracing in under a minute.</span>
+
+      {% if form.non_field_errors %}
+        <div class="form-error">
+          {% for error in form.non_field_errors %}{{ error }}{% endfor %}
+        </div>
+      {% endif %}
+
+      <form method="post" novalidate>
+        {% csrf_token %}
+        <div class="field">
+          <label for="{{ form.username.id_for_label }}">Username</label>
+          {{ form.username }}
+          {% if form.username.help_text %}<span class="field__help">{{ form.username.help_text }}</span>{% endif %}
+          {% for error in form.username.errors %}<span class="field__error">{{ error }}</span>{% endfor %}
+        </div>
+        <div class="field">
+          <label for="{{ form.password1.id_for_label }}">Password</label>
+          {{ form.password1 }}
+          {% if form.password1.help_text %}<span class="field__help">{{ form.password1.help_text|safe }}</span>{% endif %}
+          {% for error in form.password1.errors %}<span class="field__error">{{ error }}</span>{% endfor %}
+        </div>
+        <div class="field">
+          <label for="{{ form.password2.id_for_label }}">Confirm password</label>
+          {{ form.password2 }}
+          {% for error in form.password2.errors %}<span class="field__error">{{ error }}</span>{% endfor %}
+        </div>
+        <button type="submit" class="btn btn--primary btn--block auth__submit">Create account</button>
+      </form>
+
+      <p class="auth__switch">Already have an account? <a href="{% url 'login' %}">Log in</a></p>
+    </div>
+  </div>
+</div>
 {% endblock %}

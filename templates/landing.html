@@ -1,17 +1,198 @@
 {% extends "base.html" %}
+{% block title %}Kodo — Know Your Algorithm{% endblock %}
 {% block content %}
-  <h1>Welcome to Kodo</h1>
-  {% if user.is_authenticated %}
+
+<section class="hero">
+  <div class="container hero__grid">
     <div>
-      <span>Hi, {{ user.username }}!</span>
-      <form method="post" action="{% url 'logout' %}" style="display:inline;">
-        {% csrf_token %}
-        <button type="submit" style="background:none; border:none; color:blue; text-decoration:underline; cursor:pointer; padding:0; font:inherit;">
-          Logout
-        </button>
-      </form>
+      <div class="hero__eyebrow mono">for your code, not the textbook demo</div>
+      <h1>Watch <em>your</em> algorithm think.</h1>
+      <p class="hero__sub">
+        Paste your own DSA code and step through it line by line. The array, list, or tree it's
+        actually using updates live on screen, in sync with the exact line running — so you can
+        finally see what your pointers are doing instead of guessing.
+      </p>
+      <div class="hero__cta">
+        <a href="{% url 'register' %}" class="btn btn--primary">Start tracing</a>
+        <a href="#how-it-works" class="btn btn--ghost">See how it works</a>
+      </div>
     </div>
-  {% else %}
-    <a href="{% url 'login' %}">Login</a> | <a href="{% url 'register' %}">Register</a>
-  {% endif %}
+
+    <div class="trace-demo" aria-hidden="true">
+      <div class="trace-demo__code">
+        <div class="trace-demo__cursor"></div>
+        <div class="trace-demo__line"><span class="ln">04</span>for i in range(len(arr)):</div>
+        <div class="trace-demo__line"><span class="ln">05</span>&nbsp;&nbsp;if arr[i] == target:</div>
+        <div class="trace-demo__line"><span class="ln">06</span>&nbsp;&nbsp;&nbsp;&nbsp;return i</div>
+      </div>
+      <div class="trace-demo__array">
+        <div class="trace-demo__cell">12</div>
+        <div class="trace-demo__cell">7</div>
+        <div class="trace-demo__cell trace-demo__cell--active">45</div>
+        <div class="trace-demo__cell">3</div>
+        <div class="trace-demo__cell">9</div>
+      </div>
+      <div class="trace-demo__meta">
+        <span>i = 2 · target = 45</span>
+        <span><strong>step 3 of 9</strong></span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="container">
+    <div class="section__head">
+      <div class="section__kicker mono">the actual problem</div>
+      <h2>You can write it and still not really get it.</h2>
+      <p class="section__sub">
+        Most visualizers show bubble sort or BFS on a demo array that isn't yours. That's fine
+        until you're debugging your own recursion or explaining your own pointer logic in an
+        interview — and it turns out you never actually watched it happen.
+      </p>
+    </div>
+    <div class="compare">
+      <div class="compare__card compare__card--dim">
+        <span class="compare__label mono">other visualizers</span>
+        <p>A canned bubble sort animation, running on someone else's array, with someone else's variable names.</p>
+      </div>
+      <div class="compare__card compare__card--lit">
+        <span class="compare__label mono">kodo</span>
+        <p>Your function, your variable names, your bug — traced step by step against the data structure it's actually built from.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="section" id="how-it-works">
+  <div class="container">
+    <div class="section__head">
+      <div class="section__kicker mono">how it works</div>
+      <h2>Five steps, no setup.</h2>
+    </div>
+    <div class="steps">
+      <div class="step">
+        <div class="step__num mono"></div>
+        <div>
+          <h3>Paste your code</h3>
+          <p>Write or paste a Python solution using Kodo's starter classes (Node, Graph, etc.) — the same structures you'd already use for an array or linked-list assignment.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step__num mono"></div>
+        <div>
+          <h3>Guess the complexity first</h3>
+          <p>Before running anything, commit to a time and space complexity guess. No peeking — this is the part most tools skip entirely.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step__num mono"></div>
+        <div>
+          <h3>Step through the trace</h3>
+          <p>Play, pause, or step line by line. The current line highlights, and the data structure redraws itself exactly as your code would leave it at that moment.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step__num mono"></div>
+        <div>
+          <h3>Watch variables move with it</h3>
+          <p>Every pointer and variable updates in a side panel in sync with the visual — so an index bug or a lost reference is visible the instant it happens.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step__num mono"></div>
+        <div>
+          <h3>Compare your guess to reality</h3>
+          <p>Kodo counts the real operations from the trace and shows you the honest estimate — and how close your guess actually was.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="container">
+    <div class="section__head">
+      <div class="section__kicker mono">what's inside</div>
+      <h2>Built around tracing, not a feature list.</h2>
+    </div>
+    <div class="feature-groups">
+      <div class="feature-group">
+        <div class="feature-group__label mono">trace</div>
+        <div class="feature-item">
+          <h4>Code editor & tracer</h4>
+          <p>Write or paste your own solution and run it through the tracer line by line.</p>
+        </div>
+        <div class="feature-item">
+          <h4>Live structure visualization</h4>
+          <p>Your array, list, stack, or tree redraws itself in sync with the running line.</p>
+        </div>
+        <div class="feature-item">
+          <h4>Bug highlight hints</h4>
+          <p>Infinite loops and out-of-bounds access get flagged at the exact step they occur.</p>
+        </div>
+      </div>
+      <div class="feature-group">
+        <div class="feature-group__label mono">understand</div>
+        <div class="feature-item">
+          <h4>Variable watch panel</h4>
+          <p>See every variable and pointer's current value next to the visual, at every step.</p>
+        </div>
+        <div class="feature-item">
+          <h4>Big-O guess mode</h4>
+          <p>Predict complexity before running, then see the real operation count behind it.</p>
+        </div>
+        <div class="feature-item">
+          <h4>Step controls</h4>
+          <p>Play, pause, step forward or back, and adjust playback speed as you study.</p>
+        </div>
+      </div>
+      <div class="feature-group">
+        <div class="feature-group__label mono">revisit</div>
+        <div class="feature-item">
+          <h4>Saved sessions</h4>
+          <p>Save a trace on purpose to come back to before an exam or an interview.</p>
+        </div>
+        <div class="feature-item">
+          <h4>Automatic history</h4>
+          <p>Every snippet you trace is logged and timestamped, even if you forgot to save it.</p>
+        </div>
+        <div class="feature-item">
+          <h4>Dashboard & profile</h4>
+          <p>Recent traces, saved sessions, and your Big-O guess accuracy over time, in one place.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="container">
+    <div class="section__head">
+      <div class="section__kicker mono">roadmap · this semester</div>
+      <h2>Arrays first. Then everything built on top of them.</h2>
+    </div>
+    <div class="roadmap">
+      <div class="roadmap__stage roadmap__stage--active">
+        <span class="roadmap__dot"></span>
+        <span class="roadmap__when mono">weeks 1–8</span>
+        <h4>Arrays & linked lists</h4>
+        <p>The core pipeline — run code, capture each step, redraw the structure. Everything else depends on this working solidly.</p>
+      </div>
+      <div class="roadmap__stage">
+        <span class="roadmap__dot"></span>
+        <span class="roadmap__when mono">mid-semester</span>
+        <h4>Stacks & queues</h4>
+        <p>Same tracing pipeline, extended to structures built directly on arrays and lists.</p>
+      </div>
+      <div class="roadmap__stage roadmap__stage--stretch">
+        <span class="roadmap__dot"></span>
+        <span class="roadmap__when mono">stretch goal</span>
+        <h4>Trees & graphs</h4>
+        <p>BFS/DFS tracing, if time allows by the end of the semester. Tentative, not promised.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
 {% endblock %}
