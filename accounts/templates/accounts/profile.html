@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% block title %}Profile — Kodo{% endblock %}
+{% block content %}
+
+<section class="profile">
+  <div class="container">
+
+    <div class="profile__header">
+      <div class="profile__avatar mono">{{ user.username|slice:":1"|upper }}</div>
+      <div class="profile__name">
+        <h1>{{ user.username }}</h1>
+        <div class="profile__meta mono">
+          {{ user.email|default:"no email on file" }} · joined {{ user.date_joined|date:"M Y" }}
+        </div>
+      </div>
+    </div>
+
+    <div class="profile__grid">
+
+      <div class="profile__card">
+        <h3 class="mono">account</h3>
+        <div class="stat-row"><span>Username</span><span>{{ user.username }}</span></div>
+        <div class="stat-row"><span>Email</span><span>{{ user.email|default:"—" }}</span></div>
+        <div class="stat-row"><span>Joined</span><span>{{ user.date_joined|date:"N j, Y" }}</span></div>
+        <div class="stat-row"><span>Traces logged</span><span>0</span></div>
+        <div class="stat-row"><span>Big-O accuracy</span><span>—</span></div>
+      </div>
+
+      <div class="profile__card">
+        <h3 class="mono">personalize</h3>
+        <form method="post">
+          {% csrf_token %}
+          <div class="field">
+            <label for="favorite_structure">Favorite data structure</label>
+            <select name="favorite_structure" id="favorite_structure">
+              {% for key, label in profile_obj.FAVORITE_STRUCTURE_CHOICES %}
+                <option value="{{ key }}" {% if profile_obj.favorite_structure == key %}selected{% endif %}>{{ label }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="field">
+            <label for="bio">Short bio</label>
+            <input type="text" name="bio" id="bio" maxlength="140" placeholder="e.g. still debugging my own recursion" value="{{ profile_obj.bio }}">
+            <span class="field__help">Shown on your profile only. 140 characters max.</span>
+          </div>
+          <button type="submit" class="btn btn--primary btn--sm">Save</button>
+        </form>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+{% endblock %}
