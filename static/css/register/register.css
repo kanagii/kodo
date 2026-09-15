@@ -1,0 +1,90 @@
+/* ==========================================================================
+   Register page (shared auth layout)
+   ========================================================================== */
+
+/* ==========================================================================
+   Auth pages (login / register)
+   ========================================================================== */
+
+.auth {
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+}
+
+.auth__brand {
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+  padding: 48px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.auth__brand-top .nav__logo { font-size: 18px; }
+
+.auth__brand-mid { max-width: 34ch; }
+
+.auth__brand-mid h2 {
+  font-size: 26px;
+  line-height: 1.3;
+  margin-bottom: 14px;
+}
+
+.auth__brand-mid p {
+  color: var(--text-dim);
+  font-size: 15px;
+  line-height: 1.6;
+}
+
+.auth__brand-bottom {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--text-faint);
+}
+
+.auth__panel {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 48px 32px;
+}
+
+.auth__form {
+  width: 100%;
+  max-width: 380px;
+}
+
+.auth__form h1 {
+  font-size: 28px;
+  margin-bottom: 8px;
+}
+
+.auth__form-sub {
+  color: var(--text-dim);
+  font-size: 15px;
+  margin-bottom: 32px;
+  display: block;
+}
+
+.auth__submit { margin-top: 6px; }
+
+.auth__switch {
+  margin-top: 24px;
+  font-size: 14px;
+  color: var(--text-dim);
+}
+
+.auth__switch a {
+  color: var(--accent);
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.auth__switch a:hover { text-decoration: underline; }
+
+@media (max-width: 860px) {
+  .auth { grid-template-columns: 1fr; }
+  .auth__brand { display: none; }
+  .auth__panel { padding: 40px 24px; }
+}

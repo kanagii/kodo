@@ -1,0 +1,218 @@
+/* ==========================================================================
+   kodo — shared shell: tokens, base, buttons, nav, footer, form fields
+   ========================================================================== */
+
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
+
+:root {
+  /* color */
+  --bg: #10131A;
+  --surface: #171B24;
+  --surface-2: #1E2330;
+  --border: #2B3140;
+  --text: #ECE9E2;
+  --text-dim: #9AA1B0;
+  --text-faint: #5B6373;
+  --accent: #F2A33B;
+  --accent-soft: rgba(242, 163, 59, 0.14);
+  --edge: #5FC6B8;
+  --edge-soft: rgba(95, 198, 184, 0.14);
+  --danger: #E8636B;
+  --danger-soft: rgba(232, 99, 107, 0.14);
+
+  /* type */
+  --font-sans: 'IBM Plex Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  /* layout */
+  --maxw: 1160px;
+  --radius: 6px;
+}
+
+* { box-sizing: border-box; }
+
+html { color-scheme: dark; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-sans);
+  font-size: 16px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+a { color: inherit; }
+
+h1, h2, h3 { margin: 0; font-weight: 600; letter-spacing: -0.01em; }
+
+p { margin: 0; }
+
+.mono { font-family: var(--font-mono); }
+
+.container {
+  max-width: var(--maxw);
+  margin: 0 auto;
+  padding: 0 32px;
+}
+
+@media (max-width: 640px) {
+  .container { padding: 0 20px; }
+}
+
+/* --- buttons ---------------------------------------------------------- */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-family: var(--font-sans);
+  font-size: 15px;
+  font-weight: 600;
+  padding: 11px 20px;
+  border-radius: var(--radius);
+  border: 1px solid transparent;
+  cursor: pointer;
+  text-decoration: none;
+  transition: background-color 0.15s ease, border-color 0.15s ease, transform 0.1s ease;
+  line-height: 1;
+}
+
+.btn:active { transform: translateY(1px); }
+
+.btn--primary {
+  background: var(--accent);
+  color: #1A1204;
+}
+.btn--primary:hover { background: #ffb655; }
+
+.btn--ghost {
+  background: transparent;
+  border-color: var(--border);
+  color: var(--text);
+}
+.btn--ghost:hover { border-color: var(--text-dim); }
+
+.btn--block { width: 100%; }
+
+.btn--sm { padding: 8px 14px; font-size: 13px; }
+
+/* --- nav ---------------------------------------------------------------- */
+
+.nav {
+  border-bottom: 1px solid var(--border);
+}
+
+.nav__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 0;
+}
+
+.nav__logo {
+  font-family: var(--font-mono);
+  font-size: 18px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  text-decoration: none;
+  color: var(--text);
+  display: flex;
+  align-items: baseline;
+  gap: 2px;
+}
+
+.nav__logo span { color: var(--accent); }
+
+.nav__links {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.nav__user {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  color: var(--text-dim);
+  margin-right: 4px;
+}
+
+/* --- footer ---------------------------------------------------------------- */
+
+.footer {
+  padding: 32px 0;
+}
+
+.footer__row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  color: var(--text-faint);
+}
+
+.footer__links { display: flex; gap: 20px; }
+.footer__links a { text-decoration: none; color: var(--text-faint); }
+.footer__links a:hover { color: var(--text-dim); }
+
+@media (max-width: 640px) {
+  .footer__row { flex-direction: column; gap: 14px; text-align: center; }
+}
+
+/* ==========================================================================
+   Form fields (used by auth, profile and settings forms)
+   ========================================================================== */
+
+.field { margin-bottom: 18px; }
+
+.field label {
+  display: block;
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  color: var(--text-dim);
+  margin-bottom: 7px;
+}
+
+.field input {
+  width: 100%;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 11px 13px;
+  font-family: var(--font-sans);
+  font-size: 15px;
+  color: var(--text);
+  outline: none;
+  transition: border-color 0.15s ease;
+}
+
+.field input:focus {
+  border-color: var(--accent);
+}
+
+.field__help {
+  display: block;
+  margin-top: 6px;
+  font-size: 12.5px;
+  color: var(--text-faint);
+}
+
+.field__error {
+  display: block;
+  margin-top: 6px;
+  font-size: 12.5px;
+  color: var(--danger);
+}
+
+.form-error {
+  background: var(--danger-soft);
+  border: 1px solid var(--danger);
+  color: var(--danger);
+  border-radius: var(--radius);
+  padding: 11px 13px;
+  font-size: 13.5px;
+  margin-bottom: 20px;
+}

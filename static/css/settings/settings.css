@@ -1,0 +1,99 @@
+/* ==========================================================================
+   Settings page
+   ========================================================================== */
+
+/* --- profile page --------------------------------------------------- */
+
+.profile { padding: 64px 0 96px; }
+
+.profile__header {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  margin-bottom: 40px;
+}
+
+.profile__avatar {
+  width: 60px;
+  height: 60px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: var(--accent-soft);
+  border: 1px solid var(--accent);
+  color: var(--accent);
+  font-size: 22px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.profile__name h1 { font-size: 24px; }
+
+.profile__meta {
+  font-size: 13px;
+  color: var(--text-dim);
+  margin-top: 6px;
+}
+
+.profile__grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+.profile__card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 26px;
+}
+
+.profile__card h3 {
+  font-size: 13px;
+  color: var(--edge);
+  margin-bottom: 18px;
+}
+
+.stat-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 10px 0;
+  border-top: 1px solid var(--border);
+  font-size: 14px;
+}
+
+.stat-row:first-child { border-top: none; padding-top: 0; }
+.stat-row span:first-child { color: var(--text-dim); }
+.stat-row span:last-child { font-family: var(--font-mono); }
+
+@media (max-width: 720px) {
+  .profile__grid { grid-template-columns: 1fr; }
+}
+
+/* extend existing .field input styling to selects too */
+.field select {
+  width: 100%;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 11px 13px;
+  font-family: var(--font-sans);
+  font-size: 15px;
+  color: var(--text);
+  outline: none;
+  transition: border-color 0.15s ease;
+}
+
+.field select:focus { border-color: var(--accent); }
+
+/* --- settings page success banner --------------------------------- */
+
+.form-success {
+  background: var(--edge-soft);
+  border: 1px solid var(--edge);
+  color: var(--edge);
+  border-radius: var(--radius);
+  padding: 11px 13px;
+  font-size: 13.5px;
+  margin-bottom: 24px;
