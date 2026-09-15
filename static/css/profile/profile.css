@@ -86,3 +86,29 @@
 }
 
 .field select:focus { border-color: var(--accent); }
+
+/* ==========================================================================
+   Avatar image + roadmap badges
+   ========================================================================== */
+
+.profile__avatar-wrap { display: flex; }
+.profile__avatar--img {
+  width: 56px; height: 56px; border-radius: 50%;
+  object-fit: cover; border: 1px solid var(--border);
+}
+.profile__hint { color: var(--text-dim); font-size: 13px; margin-bottom: 12px; }
+
+.badge-row { display: flex; flex-wrap: wrap; gap: 8px; }
+.badge {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  color: var(--text-dim);
+}
+.badge--active {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: var(--accent-soft);
+}

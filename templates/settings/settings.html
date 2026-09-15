@@ -18,9 +18,29 @@
       <div class="form-success">Email updated.</div>
     {% elif success == "password" %}
       <div class="form-success">Password changed.</div>
+    {% elif success == "username" %}
+      <div class="form-success">Username updated.</div>
+    {% elif success == "theme" %}
+      <div class="form-success">Theme updated.</div>
     {% endif %}
 
     <div class="profile__grid">
+
+      <div class="profile__card">
+        <h3 class="mono">appearance</h3>
+        <form method="post">
+          {% csrf_token %}
+          <div class="field">
+            <label for="theme">Theme</label>
+            <select name="theme" id="theme">
+              {% for key, label in profile_obj.THEME_CHOICES %}
+                <option value="{{ key }}" {% if profile_obj.theme == key %}selected{% endif %}>{{ label }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <button type="submit" name="change_theme" class="btn btn--primary btn--sm">Save theme</button>
+        </form>
+      </div>
 
       <div class="profile__card">
         <h3 class="mono">email</h3>
@@ -32,6 +52,20 @@
             <span class="field__help">Used for account recovery only — not shown publicly.</span>
           </div>
           <button type="submit" name="update_email" class="btn btn--primary btn--sm">Save email</button>
+        </form>
+      </div>
+
+      <div class="profile__card">
+        <h3 class="mono">username</h3>
+        <form method="post">
+          {% csrf_token %}
+          <div class="field">
+            <label for="{{ username_form.username.id_for_label }}">New username</label>
+            {{ username_form.username }}
+            {% if username_form.username.help_text %}<span class="field__help">{{ username_form.username.help_text }}</span>{% endif %}
+            {% for error in username_form.username.errors %}<span class="field__error">{{ error }}</span>{% endfor %}
+          </div>
+          <button type="submit" name="change_username" class="btn btn--primary btn--sm">Change username</button>
         </form>
       </div>
 
@@ -57,6 +91,26 @@
           </div>
           {% for error in password_form.non_field_errors %}<div class="field__error">{{ error }}</div>{% endfor %}
           <button type="submit" name="change_password" class="btn btn--primary btn--sm">Change password</button>
+        </form>
+      </div>
+
+      <div class="profile__card profile__card--danger">
+        <h3 class="mono">delete account</h3>
+        <p class="profile__hint">This permanently deletes your account and profile. This cannot be undone.</p>
+        <form method="post">
+          {% csrf_token %}
+          <div class="field">
+            <label for="{{ delete_form.password.id_for_label }}">Current password</label>
+            {{ delete_form.password }}
+            {% for error in delete_form.password.errors %}<span class="field__error">{{ error }}</span>{% endfor %}
+          </div>
+          <div class="field">
+            <label for="{{ delete_form.confirm.id_for_label }}">Type "delete my account" to confirm</label>
+            {{ delete_form.confirm }}
+            {% if delete_form.confirm.help_text %}<span class="field__help">{{ delete_form.confirm.help_text }}</span>{% endif %}
+            {% for error in delete_form.confirm.errors %}<span class="field__error">{{ error }}</span>{% endfor %}
+          </div>
+          <button type="submit" name="delete_account" class="btn btn--danger btn--sm">Delete my account</button>
         </form>
       </div>
 

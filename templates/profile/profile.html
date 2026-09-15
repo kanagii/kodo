@@ -8,7 +8,13 @@
   <div class="container">
 
     <div class="profile__header">
-      <div class="profile__avatar mono">{{ user.username|slice:":1"|upper }}</div>
+      <div class="profile__avatar-wrap">
+        {% if profile_obj.avatar %}
+          <img class="profile__avatar profile__avatar--img" src="{{ profile_obj.avatar.url }}" alt="{{ user.username }}'s avatar">
+        {% else %}
+          <div class="profile__avatar mono">{{ user.username|slice:":1"|upper }}</div>
+        {% endif %}
+      </div>
       <div class="profile__name">
         <h1>{{ user.username }}</h1>
         <div class="profile__meta mono">
@@ -26,6 +32,34 @@
         <div class="stat-row"><span>Joined</span><span>{{ user.date_joined|date:"N j, Y" }}</span></div>
         <div class="stat-row"><span>Traces logged</span><span>0</span></div>
         <div class="stat-row"><span>Big-O accuracy</span><span>—</span></div>
+      </div>
+
+      <div class="profile__card">
+        <h3 class="mono">roadmap progress</h3>
+        <p class="profile__hint">Your favorite gets the star — full trace-based progress is coming once tracing ships.</p>
+        <div class="badge-row">
+          {% for s in profile_obj.structure_progress %}
+            <span class="badge {% if s.is_favorite %}badge--active{% endif %}">
+              {% if s.is_favorite %}★{% endif %} {{ s.label }}
+            </span>
+          {% endfor %}
+        </div>
+      </div>
+
+      <div class="profile__card">
+        <h3 class="mono">avatar</h3>
+        <form method="post" enctype="multipart/form-data">
+          {% csrf_token %}
+          <div class="field">
+            <label for="avatar">Upload a new avatar</label>
+            <input type="file" name="avatar" id="avatar" accept="image/*">
+            <span class="field__help">Images only, up to 2MB.</span>
+          </div>
+          <button type="submit" class="btn btn--primary btn--sm">Upload</button>
+          {% if profile_obj.avatar %}
+            <button type="submit" name="remove_avatar" value="1" class="btn btn--ghost btn--sm">Remove current</button>
+          {% endif %}
+        </form>
       </div>
 
       <div class="profile__card">

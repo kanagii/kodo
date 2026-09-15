@@ -97,3 +97,12 @@
   padding: 11px 13px;
   font-size: 13.5px;
   margin-bottom: 24px;
+
+/* ==========================================================================
+   Danger zone card
+   ========================================================================== */
+
+.profile__card--danger {
+  border-color: var(--danger-soft);
+}
+.profile__card--danger h3 { color: var(--danger); }

@@ -132,6 +132,51 @@ p { margin: 0; }
   gap: 12px;
 }
 
+.nav__identity {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  text-decoration: none;
+  padding-right: 12px;
+  border-right: 1px solid var(--border);
+}
+
+.nav__avatar {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 1px solid var(--border);
+}
+
+.nav__avatar--initial {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-size: 11px;
+}
+
+.nav__menu {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding-right: 12px;
+  border-right: 1px solid var(--border);
+}
+
+.nav__menu-link {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  color: var(--text-dim);
+  text-decoration: none;
+}
+
+.nav__menu-link:hover { color: var(--text); }
+
+.nav__logout-form { display: inline; }
+
 .nav__user {
   font-family: var(--font-mono);
   font-size: 13px;
@@ -216,3 +261,30 @@ p { margin: 0; }
   font-size: 13.5px;
   margin-bottom: 20px;
 }
+
+/* ==========================================================================
+   Light theme override
+   ========================================================================== */
+
+body.theme-light {
+  --bg: #F6F5F1;
+  --border: #DAD6CC;
+  --text: #1B1D22;
+  --text-dim: #5B6373;
+  --text-faint: #8A8F9C;
+  --accent: #C97A1A;
+  --accent-soft: rgba(201, 122, 26, 0.12);
+  --danger: #C43F47;
+  --danger-soft: rgba(196, 63, 71, 0.10);
+}
+
+/* ==========================================================================
+   Danger button + toast messages
+   ========================================================================== */
+
+.btn--danger {
+  background: transparent;
+  border: 1px solid var(--danger);
+  color: var(--danger);
+}
+.btn--danger:hover { background: var(--danger-soft); }
