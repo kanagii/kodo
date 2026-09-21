@@ -1,0 +1,38 @@
+{% extends "shared/base.html" %}
+{% load static %}
+{% block title %}History — Kodo{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'css/tracer/tracer.css' %}">{% endblock %}
+{% block content %}
+
+<section class="profile">
+  <div class="container">
+
+    <div class="profile__header">
+      <div>
+        <h1>Trace history</h1>
+        <div class="profile__meta mono">every snippet you've traced, automatically logged</div>
+      </div>
+    </div>
+
+    <div class="profile__card">
+      {% if sessions %}
+        {% for session in sessions %}
+          <div class="stat-row">
+            <span>
+              <a href="{% url 'tracer_session_detail' session.id %}">{{ session.snippet.title }}</a>
+              <span class="mono" style="color: var(--text-faint); font-size: 12px;"> · {{ session.traced_at|date:"N j, H:i" }}</span>
+            </span>
+            <span class="mono">
+              {% if session.error_message %}error{% else %}{{ session.operation_count }} ops{% endif %}
+            </span>
+          </div>
+        {% endfor %}
+      {% else %}
+        <p class="profile__hint">No traces yet — <a href="{% url 'tracer_editor' %}">trace your first snippet</a>.</p>
+      {% endif %}
+    </div>
+
+  </div>
+</section>
+
+{% endblock %}

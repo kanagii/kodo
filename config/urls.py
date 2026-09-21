@@ -10,6 +10,7 @@ urlpatterns = [
     path("", include("apps.register.urls")),
     path("", include("apps.profile.urls")),
     path("", include("apps.settings.urls")),
+    path("tracer/", include("apps.tracer.urls")),
 ]
 
 if settings.DEBUG:

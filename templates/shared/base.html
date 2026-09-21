@@ -26,6 +26,8 @@
           <div class="nav__menu">
             <a class="nav__menu-link" href="{% url 'profile' %}">Profile</a>
             <a class="nav__menu-link" href="{% url 'settings' %}">Settings</a>
+            <a class="nav__menu-link" href="{% url 'tracer_editor' %}">Tracer</a>
+            <a class="nav__menu-link" href="{% url 'tracer_history' %}">History</a>
           </div>
           <form method="post" action="{% url 'logout' %}" class="nav__logout-form">
             {% csrf_token %}

@@ -268,6 +268,8 @@ p { margin: 0; }
 
 body.theme-light {
   --bg: #F6F5F1;
+  --surface: #FFFFFF;
+  --surface-2: #EFEDE6;
   --border: #DAD6CC;
   --text: #1B1D22;
   --text-dim: #5B6373;

@@ -55,7 +55,7 @@
             <input type="file" name="avatar" id="avatar" accept="image/*">
             <span class="field__help">Images only, up to 2MB.</span>
           </div>
-          <button type="submit" class="btn btn--primary btn--sm">Upload</button>
+          <button type="submit" name="upload_avatar" value="1" class="btn btn--primary btn--sm">Upload</button>
           {% if profile_obj.avatar %}
             <button type="submit" name="remove_avatar" value="1" class="btn btn--ghost btn--sm">Remove current</button>
           {% endif %}
@@ -79,7 +79,7 @@
             <input type="text" name="bio" id="bio" maxlength="140" placeholder="e.g. still debugging my own recursion" value="{{ profile_obj.bio }}">
             <span class="field__help">Shown on your profile only. 140 characters max.</span>
           </div>
-          <button type="submit" class="btn btn--primary btn--sm">Save</button>
+          <button type="submit" name="save_profile" value="1" class="btn btn--primary btn--sm">Save</button>
         </form>
       </div>
 

@@ -1,0 +1,67 @@
+{% extends "shared/base.html" %}
+{% load static %}
+{% block title %}Tracer — Kodo{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'css/tracer/tracer.css' %}">{% endblock %}
+{% block content %}
+
+<section class="profile">
+  <div class="container">
+
+    <div class="profile__header">
+      <div>
+        <h1>Trace your code</h1>
+        <div class="profile__meta mono">paste it, guess the complexity, then run it</div>
+      </div>
+    </div>
+
+    <div class="profile__card" style="max-width: 720px;">
+      <form method="post">
+        {% csrf_token %}
+
+        <div class="field">
+          <label for="title">Title</label>
+          <input type="text" name="title" id="title" placeholder="e.g. Binary search v1">
+        </div>
+
+        <div class="field">
+          <label for="data_structure">Data structure</label>
+          <select name="data_structure" id="data_structure">
+            {% for key, label in data_structure_choices %}
+              <option value="{{ key }}">{{ label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="field">
+          <label for="code">Your code</label>
+          <textarea name="code" id="code" rows="12" class="code-input" placeholder="def search(arr, target):&#10;    for i in range(len(arr)):&#10;        if arr[i] == target:&#10;            return i" required></textarea>
+          <span class="field__help">Uses a restricted Python environment — no imports, no file/network access. A starter Node class is available for linked-list code.</span>
+        </div>
+
+        <div class="field">
+          <label for="predicted_time">Guess: time complexity</label>
+          <select name="predicted_time" id="predicted_time">
+            {% for key, label in complexity_choices %}
+              <option value="{{ key }}">{{ label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="field">
+          <label for="predicted_space">Guess: space complexity</label>
+          <select name="predicted_space" id="predicted_space">
+            {% for key, label in complexity_choices %}
+              <option value="{{ key }}">{{ label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <button type="submit" class="btn btn--primary">Run trace</button>
+        <a href="{% url 'tracer_history' %}" class="btn btn--ghost">View history</a>
+      </form>
+    </div>
+
+  </div>
+</section>
+
+{% endblock %}

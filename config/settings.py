@@ -43,6 +43,7 @@ INSTALLED_APPS = [
     "apps.register",
     "apps.profile",
     "apps.settings",
+    "apps.tracer",
 ]
 
 MIDDLEWARE = [

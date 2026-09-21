@@ -1,3 +1,4 @@
+# apps/settings/views.py
 from django.contrib import messages
 from django.contrib.auth import logout, update_session_auth_hash
 from django.contrib.auth.decorators import login_required

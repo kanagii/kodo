@@ -1,0 +1,68 @@
+{% extends "shared/base.html" %}
+{% load static %}
+{% block title %}Trace result — Kodo{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'css/tracer/tracer.css' %}">{% endblock %}
+{% block content %}
+
+<section class="profile">
+  <div class="container">
+
+    <div class="profile__header">
+      <div>
+        <h1>{{ session.snippet.title }}</h1>
+        <div class="profile__meta mono">traced {{ session.traced_at|date:"N j, Y H:i" }}</div>
+      </div>
+    </div>
+
+    <div class="profile__grid">
+      <div class="profile__card">
+        <h3 class="mono">your guess</h3>
+        <div class="stat-row"><span>Time complexity</span><span>{{ session.predicted_time_complexity|default:"—" }}</span></div>
+        <div class="stat-row"><span>Space complexity</span><span>{{ session.predicted_space_complexity|default:"—" }}</span></div>
+      </div>
+      <div class="profile__card">
+        <h3 class="mono">what actually happened</h3>
+        <div class="stat-row"><span>Operations counted</span><span>{{ session.operation_count }}</span></div>
+        <div class="stat-row"><span>Steps recorded</span><span>{{ steps|length }}</span></div>
+        <div class="stat-row"><span>Data structure</span><span>{{ session.snippet.get_data_structure_display }}</span></div>
+      </div>
+    </div>
+
+    <div class="profile__card" style="margin-top: 20px;">
+      <h3 class="mono">your code</h3>
+      <pre class="code-block">{{ session.snippet.code }}</pre>
+    </div>
+
+    <div class="profile__card" style="margin-top: 20px;">
+      <h3 class="mono">step-by-step trace</h3>
+      {% if steps %}
+      <div class="trace-table-wrap">
+        <table class="trace-table">
+          <thead>
+            <tr><th>Step</th><th>Line</th><th>Variables</th></tr>
+          </thead>
+          <tbody>
+            {% for step in steps %}
+            <tr>
+              <td>{{ step.step_number }}</td>
+              <td>{{ step.line_number }}</td>
+              <td class="mono">{{ step.variables_snapshot }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+        <p class="profile__hint">No steps were recorded — the code may not have run any lines before failing.</p>
+      {% endif %}
+    </div>
+
+    <div style="margin-top: 24px;">
+      <a href="{% url 'tracer_editor' %}" class="btn btn--ghost btn--sm">Trace another snippet</a>
+      <a href="{% url 'tracer_history' %}" class="btn btn--ghost btn--sm">View history</a>
+    </div>
+
+  </div>
+</section>
+
+{% endblock %}
