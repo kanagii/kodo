@@ -3,7 +3,7 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import render, redirect, get_object_or_404
 
-from .models import Snippet, TraceSession, TraceStep, DATA_STRUCTURE_CHOICES, COMPLEXITY_CHOICES
+from .models import Code, TraceSession, TraceStep, DATA_STRUCTURE_CHOICES, COMPLEXITY_CHOICES
 from .engine import run_traced_code
 
 
@@ -11,29 +11,29 @@ from .engine import run_traced_code
 def editor(request):
     if request.method == "POST":
         title = request.POST.get("title", "").strip() or "Untitled snippet"
-        code = request.POST.get("code", "")
+        source_code = request.POST.get("code", "")
         data_structure = request.POST.get("data_structure", "")
         predicted_time = request.POST.get("predicted_time", "")
         predicted_space = request.POST.get("predicted_space", "")
 
-        if not code.strip():
+        if not source_code.strip():
             messages.error(request, "Paste some code first.")
             return render(request, "tracer/editor.html", {
                 "data_structure_choices": DATA_STRUCTURE_CHOICES,
                 "complexity_choices": COMPLEXITY_CHOICES,
             })
 
-        snippet = Snippet.objects.create(
+        code_obj = Code.objects.create(
             user=request.user,
             title=title,
-            code=code,
+            source_code=source_code,
             data_structure=data_structure,
         )
 
-        steps, error_message = run_traced_code(code)
+        steps, error_message = run_traced_code(source_code)
 
         session = TraceSession.objects.create(
-            snippet=snippet,
+            code=code_obj,
             predicted_time_complexity=predicted_time,
             predicted_space_complexity=predicted_space,
             operation_count=len(steps),
@@ -67,7 +67,7 @@ def editor(request):
 @login_required
 def session_detail(request, session_id):
     session = get_object_or_404(
-        TraceSession, id=session_id, snippet__user=request.user
+        TraceSession, id=session_id, code__user=request.user
     )
     steps = session.steps.all()
     return render(request, "tracer/session_detail.html", {
@@ -80,8 +80,8 @@ def session_detail(request, session_id):
 def history(request):
     sessions = (
         TraceSession.objects
-        .filter(snippet__user=request.user)
-        .select_related("snippet")
+        .filter(code__user=request.user)
+        .select_related("code")
         .order_by("-traced_at")
     )
     return render(request, "tracer/history.html", {"sessions": sessions})

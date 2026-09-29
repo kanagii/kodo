@@ -19,7 +19,7 @@
         {% for session in sessions %}
           <div class="stat-row">
             <span>
-              <a href="{% url 'tracer_session_detail' session.id %}">{{ session.snippet.title }}</a>
+              <a href="{% url 'tracer_session_detail' session.id %}">{{ session.code.title }}</a>
               <span class="mono" style="color: var(--text-faint); font-size: 12px;"> · {{ session.traced_at|date:"N j, H:i" }}</span>
             </span>
             <span class="mono">

@@ -23,10 +23,10 @@ COMPLEXITY_CHOICES = [
 ]
 
 
-class Snippet(models.Model):
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="snippets")
+class Code(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="code_snippets")
     title = models.CharField(max_length=120)
-    code = models.TextField()
+    source_code = models.TextField()
     data_structure = models.CharField(max_length=20, choices=DATA_STRUCTURE_CHOICES, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -35,12 +35,9 @@ class Snippet(models.Model):
 
 
 class TraceSession(models.Model):
-    snippet = models.ForeignKey(Snippet, on_delete=models.CASCADE, related_name="sessions")
+    code = models.ForeignKey(Code, on_delete=models.CASCADE, related_name="sessions")
     predicted_time_complexity = models.CharField(max_length=20, choices=COMPLEXITY_CHOICES, blank=True)
     predicted_space_complexity = models.CharField(max_length=20, choices=COMPLEXITY_CHOICES, blank=True)
-    # Left blank for now — classifying *actual* Big-O from a raw operation
-    # count reliably is genuinely hard. operation_count below is the
-    # honest, simple estimate your proposal describes instead.
     actual_time_complexity = models.CharField(max_length=20, blank=True)
     actual_space_complexity = models.CharField(max_length=20, blank=True)
     operation_count = models.IntegerField(default=0)
@@ -49,16 +46,16 @@ class TraceSession(models.Model):
     traced_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return f"Trace of {self.snippet.title} @ {self.traced_at:%Y-%m-%d %H:%M}"
+        return f"Trace of {self.code.title} @ {self.traced_at:%Y-%m-%d %H:%M}"
 
 
 class TraceStep(models.Model):
     trace_session = models.ForeignKey(TraceSession, on_delete=models.CASCADE, related_name="steps")
     step_number = models.IntegerField()
     line_number = models.IntegerField()
+    # Required for the variable watch, gi omit nako ang variables_snapshot ug structure_snapshot sa erd sori sir hehe :>
+    # Panel and future live visualization to have any data to read from.
     variables_snapshot = models.JSONField(default=dict)
-    # Best-effort guess at "the" data structure in play at this line —
-    # reserved for the live-visualization phase, built later.
     structure_snapshot = models.JSONField(null=True, blank=True, default=None)
 
     class Meta:

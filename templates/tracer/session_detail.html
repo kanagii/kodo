@@ -9,7 +9,7 @@
 
     <div class="profile__header">
       <div>
-        <h1>{{ session.snippet.title }}</h1>
+        <h1>{{ session.code.title }}</h1>
         <div class="profile__meta mono">traced {{ session.traced_at|date:"N j, Y H:i" }}</div>
       </div>
     </div>
@@ -24,13 +24,13 @@
         <h3 class="mono">what actually happened</h3>
         <div class="stat-row"><span>Operations counted</span><span>{{ session.operation_count }}</span></div>
         <div class="stat-row"><span>Steps recorded</span><span>{{ steps|length }}</span></div>
-        <div class="stat-row"><span>Data structure</span><span>{{ session.snippet.get_data_structure_display }}</span></div>
+        <div class="stat-row"><span>Data structure</span><span>{{ session.code.get_data_structure_display }}</span></div>
       </div>
     </div>
 
     <div class="profile__card" style="margin-top: 20px;">
       <h3 class="mono">your code</h3>
-      <pre class="code-block">{{ session.snippet.code }}</pre>
+      <pre class="code-block">{{ session.code.source_code }}</pre>
     </div>
 
     <div class="profile__card" style="margin-top: 20px;">

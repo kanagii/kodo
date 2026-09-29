@@ -15,7 +15,11 @@
         finally see what your pointers are doing instead of guessing.
       </p>
       <div class="hero__cta">
-        <a href="{% url 'register' %}" class="btn btn--primary">Start tracing</a>
+        {% if user.is_authenticated %}
+          <a href="{% url 'tracer_editor' %}" class="btn btn--primary">Start tracing</a>
+        {% else %}
+          <a href="{% url 'register' %}" class="btn btn--primary">Start tracing</a>
+        {% endif %}
         <a href="#how-it-works" class="btn btn--ghost">See how it works</a>
       </div>
     </div>
