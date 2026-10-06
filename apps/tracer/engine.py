@@ -3,9 +3,12 @@
 Kodo's trace engine.
 
 Executes a submitted Python snippet and records, for every executed line,
-which line ran and what the local variables looked like at that moment.
-This raw step data is what the (future) live-visualization frontend would
-animate through.
+which line ran and what the local variables looked like right after that
+line finished — not before. This matters: a snapshot taken "before" a line
+runs never gets a chance to show the effect of the very last line in a
+function (e.g. a `return` statement), since there's no next line left to
+trigger that capture. Buffering the "pending" line per frame and flushing
+it on the next line event (or on return/exception) fixes that gap.
 
 SECURITY NOTE — read before exposing this anywhere beyond your own machine:
 This runs user-submitted code with exec(). The restricted builtins list
@@ -13,10 +16,8 @@ below blocks the obvious dangerous calls (no open, no __import__, no os/sys
 access), and a step cap + time cap stop runaway infinite loops from hanging
 the server. This is a reasonable safeguard for trusted, small-scale use
 (you, plus a couple of classmates testing locally) — it is NOT a real
-sandbox. A determined user can likely still find ways to escape a
-restricted exec() in pure Python. Do not deploy this as a public-facing
-endpoint without running traced code in an isolated subprocess or
-container instead.
+sandbox. Do not deploy this as a public-facing endpoint without running
+traced code in an isolated subprocess or container instead.
 """
 
 import sys
@@ -87,6 +88,16 @@ def run_traced_code(source_code):
     """
     steps = []
     start_time = time.time()
+    pending = {}  # id(frame) -> line number whose post-state we're waiting to capture
+
+    def flush(frame):
+        line = pending.pop(id(frame), None)
+        if line is not None:
+            steps.append({
+                "line_number": line,
+                "variables": _snapshot_variables(frame.f_locals),
+                "structure": _guess_structure_snapshot(frame.f_locals),
+            })
 
     safe_builtins = {
         "range": range, "len": len, "int": int, "float": float,
@@ -104,6 +115,7 @@ def run_traced_code(source_code):
     def trace_calls(frame, event, arg):
         if frame.f_code.co_filename != TRACE_FILENAME:
             return None
+
         if event == "line":
             if len(steps) >= MAX_STEPS:
                 raise TraceLimitExceeded(
@@ -113,11 +125,16 @@ def run_traced_code(source_code):
                 raise TraceLimitExceeded(
                     f"Stopped after {MAX_SECONDS}s — likely an infinite loop."
                 )
-            steps.append({
-                "line_number": frame.f_lineno,
-                "variables": _snapshot_variables(frame.f_locals),
-                "structure": _guess_structure_snapshot(frame.f_locals),
-            })
+            # finalize whatever line was pending for THIS frame, using the
+            # state as it stands right now (i.e. right after that line ran)
+            flush(frame)
+            pending[id(frame)] = frame.f_lineno
+
+        elif event in ("return", "exception"):
+            # the frame is about to exit — capture its last pending line
+            # (e.g. a `return` statement) with the final state before exit
+            flush(frame)
+
         return trace_calls
 
     error_message = None

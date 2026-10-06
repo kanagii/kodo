@@ -22,40 +22,55 @@
       </div>
       <div class="profile__card">
         <h3 class="mono">what actually happened</h3>
-        <div class="stat-row"><span>Operations counted</span><span>{{ session.operation_count }}</span></div>
-        <div class="stat-row"><span>Steps recorded</span><span>{{ steps|length }}</span></div>
-        <div class="stat-row"><span>Data structure</span><span>{{ session.code.get_data_structure_display }}</span></div>
+        <div class="stat-row"><span>Operations counted: </span><span>{{ session.operation_count }}</span></div>
+        <div class="stat-row"><span>Steps recorded: </span><span>{{ steps|length }}</span></div>
+        <div class="stat-row"><span>Data structure: </span><span>{{ session.code.get_data_structure_display }}</span></div>
       </div>
     </div>
 
+    {% if steps %}
     <div class="profile__card" style="margin-top: 20px;">
-      <h3 class="mono">your code</h3>
-      <pre class="code-block">{{ session.code.source_code }}</pre>
-    </div>
-
-    <div class="profile__card" style="margin-top: 20px;">
-      <h3 class="mono">step-by-step trace</h3>
-      {% if steps %}
-      <div class="trace-table-wrap">
-        <table class="trace-table">
-          <thead>
-            <tr><th>Step</th><th>Line</th><th>Variables</th></tr>
-          </thead>
-          <tbody>
-            {% for step in steps %}
-            <tr>
-              <td>{{ step.step_number }}</td>
-              <td>{{ step.line_number }}</td>
-              <td class="mono">{{ step.variables_snapshot }}</td>
-            </tr>
-            {% endfor %}
-          </tbody>
-        </table>
+      <div class="visualizer__head">
+        <h3 class="mono">visualize the trace</h3>
+        <div class="visualizer__controls">
+          <button type="button" id="viz-prev" class="btn btn--ghost btn--sm">◀ Prev</button>
+          <button type="button" id="viz-play" class="btn btn--primary btn--sm">▶ Play</button>
+          <button type="button" id="viz-next" class="btn btn--ghost btn--sm">Next ▶</button>
+          <select id="viz-speed" class="visualizer__speed mono">
+            <option value="1400">0.5×</option>
+            <option value="700" selected>1×</option>
+            <option value="350">2×</option>
+          </select>
+          <span id="viz-progress" class="mono visualizer__progress">step 1 of {{ steps|length }}</span>
+        </div>
       </div>
-      {% else %}
+
+      <div class="visualizer__grid">
+        <div class="visualizer__code" id="viz-code">
+          {% spaceless %}
+          {% for line in source_lines %}
+            <div class="visualizer__line" data-line="{{ forloop.counter }}"><span class="ln">{{ forloop.counter|stringformat:"02d" }}</span><span class="visualizer__line-text">{{ line }}</span></div>
+          {% endfor %}
+          {% endspaceless %}
+        </div>
+
+        <div class="visualizer__panels">
+          <div class="visualizer__panel">
+            <div class="visualizer__panel-label mono">data structure</div>
+            <div id="viz-structure"></div>
+          </div>
+          <div class="visualizer__panel">
+            <div class="visualizer__panel-label mono">variables</div>
+            <div id="viz-vars" class="visualizer__vars"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    {% else %}
+      <div class="profile__card" style="margin-top: 20px;">
         <p class="profile__hint">No steps were recorded — the code may not have run any lines before failing.</p>
-      {% endif %}
-    </div>
+      </div>
+    {% endif %}
 
     <div style="margin-top: 24px;">
       <a href="{% url 'tracer_editor' %}" class="btn btn--ghost btn--sm">Trace another snippet</a>
@@ -64,5 +79,137 @@
 
   </div>
 </section>
+
+{{ steps_data|json_script:"viz-steps-data" }}
+
+<script>
+(function () {
+  const stepsEl = document.getElementById("viz-steps-data");
+  if (!stepsEl) return; // no steps recorded, nothing to animate
+
+  const steps = JSON.parse(stepsEl.textContent);
+  if (!steps.length) return;
+
+  let index = 0;
+  let playing = false;
+  let timer = null;
+  let speedMs = 700;
+
+  const codeLines = document.querySelectorAll("#viz-code .visualizer__line");
+  const structureEl = document.getElementById("viz-structure");
+  const varsEl = document.getElementById("viz-vars");
+  const progressEl = document.getElementById("viz-progress");
+  const prevBtn = document.getElementById("viz-prev");
+  const nextBtn = document.getElementById("viz-next");
+  const playBtn = document.getElementById("viz-play");
+  const speedSelect = document.getElementById("viz-speed");
+
+  function renderLine(step) {
+    codeLines.forEach(el => {
+      el.classList.toggle("visualizer__line--active", Number(el.dataset.line) === step.line_number);
+    });
+  }
+
+  function renderVariables(step) {
+    varsEl.innerHTML = "";
+    const entries = Object.entries(step.variables || {});
+    if (!entries.length) {
+      varsEl.innerHTML = '<p class="profile__hint">No local variables at this step.</p>';
+      return;
+    }
+    entries.forEach(([key, value]) => {
+      const row = document.createElement("div");
+      row.className = "stat-row";
+      row.innerHTML = `<span>${key}</span><span class="mono">${JSON.stringify(value)}</span>`;
+      varsEl.appendChild(row);
+    });
+  }
+
+  function renderStructure(step) {
+    structureEl.innerHTML = "";
+    if (!step.structure) {
+      structureEl.innerHTML = '<p class="profile__hint">No array detected at this step.</p>';
+      return;
+    }
+    const [varName, arr] = Object.entries(step.structure)[0];
+    if (!Array.isArray(arr)) {
+      structureEl.innerHTML = '<p class="profile__hint">Structure value isn\'t a simple list yet.</p>';
+      return;
+    }
+
+    // best-effort: any integer variable whose value is a valid index
+    // into this array is treated as a "pointer" into it
+    const pointers = {};
+    Object.entries(step.variables || {}).forEach(([key, value]) => {
+      if (Number.isInteger(value) && value >= 0 && value < arr.length) {
+        (pointers[value] = pointers[value] || []).push(key);
+      }
+    });
+
+    const label = document.createElement("div");
+    label.className = "mono visualizer__structure-label";
+    label.textContent = varName;
+    structureEl.appendChild(label);
+
+    const row = document.createElement("div");
+    row.className = "visualizer__array";
+    arr.forEach((val, idx) => {
+      const wrap = document.createElement("div");
+      wrap.className = "visualizer__cell-wrap";
+      const cell = document.createElement("div");
+      cell.className = "visualizer__cell" + (pointers[idx] ? " visualizer__cell--active" : "");
+      cell.textContent = val;
+      wrap.appendChild(cell);
+      const ptr = document.createElement("div");
+      ptr.className = "mono visualizer__pointer-label";
+      ptr.textContent = pointers[idx] ? pointers[idx].join(", ") : "";
+      wrap.appendChild(ptr);
+      row.appendChild(wrap);
+    });
+    structureEl.appendChild(row);
+  }
+
+  function render() {
+    const step = steps[index];
+    renderLine(step);
+    renderVariables(step);
+    renderStructure(step);
+    progressEl.textContent = `step ${index + 1} of ${steps.length}`;
+    prevBtn.disabled = index === 0;
+    nextBtn.disabled = index === steps.length - 1;
+    if (index === steps.length - 1) stop();
+  }
+
+  function stop() {
+    playing = false;
+    playBtn.textContent = "▶ Play";
+    if (timer) { clearInterval(timer); timer = null; }
+  }
+
+  function play() {
+    if (index === steps.length - 1) index = 0;
+    playing = true;
+    playBtn.textContent = "⏸ Pause";
+    timer = setInterval(() => {
+      if (index < steps.length - 1) {
+        index++;
+        render();
+      } else {
+        stop();
+      }
+    }, speedMs);
+  }
+
+  prevBtn.addEventListener("click", () => { stop(); if (index > 0) { index--; render(); } });
+  nextBtn.addEventListener("click", () => { stop(); if (index < steps.length - 1) { index++; render(); } });
+  playBtn.addEventListener("click", () => { playing ? stop() : play(); });
+  speedSelect.addEventListener("change", () => {
+    speedMs = Number(speedSelect.value);
+    if (playing) { stop(); play(); }
+  });
+
+  render();
+})();
+</script>
 
 {% endblock %}

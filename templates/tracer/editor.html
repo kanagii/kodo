@@ -64,4 +64,111 @@
   </div>
 </section>
 
+<script>
+(function () {
+  const textarea = document.getElementById("code");
+  if (!textarea) return;
+
+  const TAB = "    "; // 4 spaces
+  const PAIRS = { "(": ")", "[": "]", "{": "}", '"': '"', "'": "'" };
+  const CLOSERS = new Set(Object.values(PAIRS));
+
+  textarea.addEventListener("keydown", function (e) {
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const value = textarea.value;
+
+    // --- Tab / Shift+Tab: indent or outdent -------------------------
+    if (e.key === "Tab") {
+      e.preventDefault();
+
+      if (start === end) {
+        if (e.shiftKey) {
+          const lineStart = value.lastIndexOf("\n", start - 1) + 1;
+          const lineText = value.slice(lineStart, start);
+          const removeMatch = lineText.match(/^ {1,4}/);
+          const removeCount = removeMatch ? removeMatch[0].length : 0;
+          if (removeCount > 0) {
+            textarea.value = value.slice(0, lineStart) + value.slice(lineStart + removeCount, start) + value.slice(start);
+            textarea.selectionStart = textarea.selectionEnd = start - removeCount;
+          }
+        } else {
+          textarea.value = value.slice(0, start) + TAB + value.slice(end);
+          textarea.selectionStart = textarea.selectionEnd = start + TAB.length;
+        }
+        return;
+      }
+
+      // a block of lines is selected — indent/outdent every line in it
+      const lineStart = value.lastIndexOf("\n", start - 1) + 1;
+      let lineEnd = value.indexOf("\n", end);
+      if (lineEnd === -1) lineEnd = value.length;
+      const lines = value.slice(lineStart, lineEnd).split("\n");
+
+      let deltaStart = 0;
+      let deltaTotal = 0;
+      const newLines = lines.map((line, i) => {
+        if (e.shiftKey) {
+          const removeMatch = line.match(/^ {1,4}/);
+          const removeCount = removeMatch ? removeMatch[0].length : 0;
+          if (i === 0) deltaStart = -removeCount;
+          deltaTotal -= removeCount;
+          return line.slice(removeCount);
+        } else {
+          if (i === 0) deltaStart = TAB.length;
+          deltaTotal += TAB.length;
+          return TAB + line;
+        }
+      });
+
+      textarea.value = value.slice(0, lineStart) + newLines.join("\n") + value.slice(lineEnd);
+      textarea.selectionStart = start + deltaStart;
+      textarea.selectionEnd = end + deltaTotal;
+      return;
+    }
+
+    // --- Auto-close ( [ { " ' -----------------------------------------
+    if (PAIRS[e.key] && start === end) {
+      e.preventDefault();
+      const closer = PAIRS[e.key];
+      textarea.value = value.slice(0, start) + e.key + closer + value.slice(end);
+      textarea.selectionStart = textarea.selectionEnd = start + 1;
+      return;
+    }
+
+    // --- Typing a closing char that's already next: skip over it -----
+    if (CLOSERS.has(e.key) && start === end && value[start] === e.key) {
+      e.preventDefault();
+      textarea.selectionStart = textarea.selectionEnd = start + 1;
+      return;
+    }
+
+    // --- Backspace between an empty pair deletes both -----------------
+    if (e.key === "Backspace" && start === end && start > 0) {
+      const prevChar = value[start - 1];
+      const nextChar = value[start];
+      if (PAIRS[prevChar] === nextChar) {
+        e.preventDefault();
+        textarea.value = value.slice(0, start - 1) + value.slice(start + 1);
+        textarea.selectionStart = textarea.selectionEnd = start - 1;
+      }
+      return;
+    }
+
+    // --- Enter: auto-indent to match current line, +1 level after ':' -
+    if (e.key === "Enter" && start === end) {
+      e.preventDefault();
+      const lineStart = value.lastIndexOf("\n", start - 1) + 1;
+      const lineText = value.slice(lineStart, start);
+      const indentMatch = lineText.match(/^[ \t]*/);
+      let indent = indentMatch ? indentMatch[0] : "";
+      if (lineText.trim().endsWith(":")) indent += TAB;
+      const insertion = "\n" + indent;
+      textarea.value = value.slice(0, start) + insertion + value.slice(end);
+      textarea.selectionStart = textarea.selectionEnd = start + insertion.length;
+    }
+  });
+})();
+</script>
+
 {% endblock %}

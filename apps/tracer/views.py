@@ -69,10 +69,27 @@ def session_detail(request, session_id):
     session = get_object_or_404(
         TraceSession, id=session_id, code__user=request.user
     )
-    steps = session.steps.all()
+    steps_qs = session.steps.all()
+
+    # Serialized for the frontend player — json_script in the template
+    # turns this straight into JSON the visualizer's JS can read, no
+    # extra API endpoint needed.
+    steps_data = [
+        {
+            "step_number": s.step_number,
+            "line_number": s.line_number,
+            "variables": s.variables_snapshot,
+            "structure": s.structure_snapshot,
+        }
+        for s in steps_qs
+    ]
+    source_lines = session.code.source_code.splitlines()
+
     return render(request, "tracer/session_detail.html", {
         "session": session,
-        "steps": steps,
+        "steps": steps_qs,
+        "steps_data": steps_data,
+        "source_lines": source_lines,
     })
 
 
