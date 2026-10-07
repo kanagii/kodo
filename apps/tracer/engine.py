@@ -3,12 +3,11 @@
 Kodo's trace engine.
 
 Executes a submitted Python snippet and records, for every executed line,
-which line ran and what the local variables looked like right after that
-line finished — not before. This matters: a snapshot taken "before" a line
-runs never gets a chance to show the effect of the very last line in a
-function (e.g. a `return` statement), since there's no next line left to
-trigger that capture. Buffering the "pending" line per frame and flushing
-it on the next line event (or on return/exception) fixes that gap.
+which line ran, what the local variables looked like right after that line
+finished, and anything print() wrote during that line. Capturing happens
+"post-execution" (buffer the pending line, flush it on the next line event
+or on return/exception) so the very last line in a function — including a
+bare `return` — gets its own correctly-timed step instead of being missed.
 
 SECURITY NOTE — read before exposing this anywhere beyond your own machine:
 This runs user-submitted code with exec(). The restricted builtins list
@@ -27,6 +26,7 @@ import json
 
 MAX_STEPS = 500
 MAX_SECONDS = 3
+MAX_OUTPUT_CHARS = 10000
 TRACE_FILENAME = "<kodo_trace>"
 
 
@@ -83,20 +83,34 @@ def _guess_structure_snapshot(locals_dict):
 def run_traced_code(source_code):
     """
     Runs source_code and returns (steps, error_message).
-    steps: list of {"line_number": int, "variables": {...}, "structure": {...} | None}
+    steps: list of {"line_number": int, "variables": {...}, "structure": {...} | None, "output": str}
     error_message: None on a clean run, else a short description.
     """
     steps = []
     start_time = time.time()
-    pending = {}  # id(frame) -> line number whose post-state we're waiting to capture
+    pending = {}        # id(frame) -> line number whose post-state we're waiting to capture
+    output_buffer = []  # text printed since the last flush, across all frames
+    output_total_len = [0]  # mutable counter (list so the closure below can update it)
+
+    def captured_print(*args, **kwargs):
+        sep = kwargs.get("sep", " ")
+        end = kwargs.get("end", "\n")
+        text = sep.join(str(a) for a in args) + end
+        output_total_len[0] += len(text)
+        if output_total_len[0] > MAX_OUTPUT_CHARS:
+            raise TraceLimitExceeded("Too much output printed — stopped to avoid overload.")
+        output_buffer.append(text)
 
     def flush(frame):
         line = pending.pop(id(frame), None)
         if line is not None:
+            output_text = "".join(output_buffer)
+            output_buffer.clear()
             steps.append({
                 "line_number": line,
                 "variables": _snapshot_variables(frame.f_locals),
                 "structure": _guess_structure_snapshot(frame.f_locals),
+                "output": output_text,
             })
 
     safe_builtins = {
@@ -105,7 +119,7 @@ def run_traced_code(source_code):
         "tuple": tuple, "bool": bool, "min": min, "max": max,
         "sum": sum, "sorted": sorted, "enumerate": enumerate,
         "zip": zip, "abs": abs, "isinstance": isinstance,
-        "print": lambda *a, **k: None,
+        "print": captured_print,
         "True": True, "False": False, "None": None,
     }
 
@@ -125,14 +139,10 @@ def run_traced_code(source_code):
                 raise TraceLimitExceeded(
                     f"Stopped after {MAX_SECONDS}s — likely an infinite loop."
                 )
-            # finalize whatever line was pending for THIS frame, using the
-            # state as it stands right now (i.e. right after that line ran)
             flush(frame)
             pending[id(frame)] = frame.f_lineno
 
         elif event in ("return", "exception"):
-            # the frame is about to exit — capture its last pending line
-            # (e.g. a `return` statement) with the final state before exit
             flush(frame)
 
         return trace_calls

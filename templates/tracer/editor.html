@@ -14,52 +14,74 @@
       </div>
     </div>
 
-    <div class="profile__card" style="max-width: 720px;">
-      <form method="post">
-        {% csrf_token %}
+    <form method="post">
+      {% csrf_token %}
+      <div class="tracer-editor__grid">
 
-        <div class="field">
-          <label for="title">Title</label>
-          <input type="text" name="title" id="title" placeholder="e.g. Binary search v1">
+        <div class="tracer-editor__code-panel">
+          <div class="tracer-editor__code-toolbar">
+            <span class="mono tracer-editor__code-label">your code</span>
+            <span class="mono tracer-editor__code-hint">python only · tab to indent · brackets auto-close</span>
+          </div>
+          <div class="tracer-editor__code-wrap">
+            <div class="tracer-editor__gutter" id="code-gutter">1</div>
+            <textarea
+              name="code" id="code"
+              class="tracer-editor__textarea"
+              spellcheck="false"
+              placeholder="def search(arr, target):
+    for i in range(len(arr)):
+        if arr[i] == target:
+            return i
+    return -1"
+              required></textarea>
+          </div>
         </div>
 
-        <div class="field">
-          <label for="data_structure">Data structure</label>
-          <select name="data_structure" id="data_structure">
-            {% for key, label in data_structure_choices %}
-              <option value="{{ key }}">{{ label }}</option>
-            {% endfor %}
-          </select>
-        </div>
+        <div class="tracer-editor__sidebar">
 
-        <div class="field">
-          <label for="code">Your code</label>
-          <textarea name="code" id="code" rows="12" class="code-input" placeholder="def search(arr, target):&#10;    for i in range(len(arr)):&#10;        if arr[i] == target:&#10;            return i" required></textarea>
-          <span class="field__help">Uses a restricted Python environment — no imports, no file/network access. A starter Node class is available for linked-list code.</span>
-        </div>
+          <div class="profile__card">
+            <h3 class="mono">about this snippet</h3>
+            <div class="field">
+              <label for="title">Title</label>
+              <input type="text" name="title" id="title" placeholder="e.g. Binary search v1">
+            </div>
+            <div class="field" style="margin-bottom: 0;">
+              <label for="data_structure">Data structure</label>
+              <select name="data_structure" id="data_structure">
+                {% for key, label in data_structure_choices %}
+                  <option value="{{ key }}">{{ label }}</option>
+                {% endfor %}
+              </select>
+            </div>
+          </div>
 
-        <div class="field">
-          <label for="predicted_time">Guess: time complexity</label>
-          <select name="predicted_time" id="predicted_time">
-            {% for key, label in complexity_choices %}
-              <option value="{{ key }}">{{ label }}</option>
-            {% endfor %}
-          </select>
-        </div>
+          <div class="profile__card">
+            <h3 class="mono">guess the complexity</h3>
+            <div class="field">
+              <label for="predicted_time">Time complexity</label>
+              <select name="predicted_time" id="predicted_time">
+                {% for key, label in complexity_choices %}
+                  <option value="{{ key }}">{{ label }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="field" style="margin-bottom: 0;">
+              <label for="predicted_space">Space complexity</label>
+              <select name="predicted_space" id="predicted_space">
+                {% for key, label in complexity_choices %}
+                  <option value="{{ key }}">{{ label }}</option>
+                {% endfor %}
+              </select>
+            </div>
+          </div>
 
-        <div class="field">
-          <label for="predicted_space">Guess: space complexity</label>
-          <select name="predicted_space" id="predicted_space">
-            {% for key, label in complexity_choices %}
-              <option value="{{ key }}">{{ label }}</option>
-            {% endfor %}
-          </select>
-        </div>
+          <button type="submit" class="btn btn--primary btn--block">Run trace</button>
+          <a href="{% url 'tracer_history' %}" class="btn btn--ghost btn--block tracer-editor__history-link">View history</a>
 
-        <button type="submit" class="btn btn--primary">Run trace</button>
-        <a href="{% url 'tracer_history' %}" class="btn btn--ghost">View history</a>
-      </form>
-    </div>
+        </div>
+      </div>
+    </form>
 
   </div>
 </section>
@@ -67,11 +89,24 @@
 <script>
 (function () {
   const textarea = document.getElementById("code");
-  if (!textarea) return;
+  const gutter = document.getElementById("code-gutter");
+  if (!textarea || !gutter) return;
 
   const TAB = "    "; // 4 spaces
   const PAIRS = { "(": ")", "[": "]", "{": "}", '"': '"', "'": "'" };
   const CLOSERS = new Set(Object.values(PAIRS));
+
+  function updateGutter() {
+    const lineCount = (textarea.value.match(/\n/g) || []).length + 1;
+    let out = "";
+    for (let i = 1; i <= lineCount; i++) out += i + "\n";
+    gutter.textContent = out.trim();
+    gutter.scrollTop = textarea.scrollTop;
+  }
+
+  textarea.addEventListener("input", updateGutter);
+  textarea.addEventListener("scroll", () => { gutter.scrollTop = textarea.scrollTop; });
+  updateGutter();
 
   textarea.addEventListener("keydown", function (e) {
     const start = textarea.selectionStart;
@@ -96,10 +131,10 @@
           textarea.value = value.slice(0, start) + TAB + value.slice(end);
           textarea.selectionStart = textarea.selectionEnd = start + TAB.length;
         }
+        updateGutter();
         return;
       }
 
-      // a block of lines is selected — indent/outdent every line in it
       const lineStart = value.lastIndexOf("\n", start - 1) + 1;
       let lineEnd = value.indexOf("\n", end);
       if (lineEnd === -1) lineEnd = value.length;
@@ -124,6 +159,7 @@
       textarea.value = value.slice(0, lineStart) + newLines.join("\n") + value.slice(lineEnd);
       textarea.selectionStart = start + deltaStart;
       textarea.selectionEnd = end + deltaTotal;
+      updateGutter();
       return;
     }
 
@@ -133,6 +169,7 @@
       const closer = PAIRS[e.key];
       textarea.value = value.slice(0, start) + e.key + closer + value.slice(end);
       textarea.selectionStart = textarea.selectionEnd = start + 1;
+      updateGutter();
       return;
     }
 
@@ -151,6 +188,7 @@
         e.preventDefault();
         textarea.value = value.slice(0, start - 1) + value.slice(start + 1);
         textarea.selectionStart = textarea.selectionEnd = start - 1;
+        updateGutter();
       }
       return;
     }
@@ -166,6 +204,7 @@
       const insertion = "\n" + indent;
       textarea.value = value.slice(0, start) + insertion + value.slice(end);
       textarea.selectionStart = textarea.selectionEnd = start + insertion.length;
+      updateGutter();
     }
   });
 })();
