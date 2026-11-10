@@ -47,6 +47,7 @@ def editor(request):
                 line_number=step["line_number"],
                 variables_snapshot=step["variables"],
                 structure_snapshot=step["structure"],
+                output=step.get("output", ""),
             )
             for i, step in enumerate(steps)
         ])
@@ -71,15 +72,13 @@ def session_detail(request, session_id):
     )
     steps_qs = session.steps.all()
 
-    # Serialized for the frontend player — json_script in the template
-    # turns this straight into JSON the visualizer's JS can read, no
-    # extra API endpoint needed.
     steps_data = [
         {
             "step_number": s.step_number,
             "line_number": s.line_number,
             "variables": s.variables_snapshot,
             "structure": s.structure_snapshot,
+            "output": s.output,
         }
         for s in steps_qs
     ]

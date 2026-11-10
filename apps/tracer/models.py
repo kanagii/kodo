@@ -53,10 +53,10 @@ class TraceStep(models.Model):
     trace_session = models.ForeignKey(TraceSession, on_delete=models.CASCADE, related_name="steps")
     step_number = models.IntegerField()
     line_number = models.IntegerField()
-    # Required for the variable watch, gi omit nako ang variables_snapshot ug structure_snapshot sa erd sori sir hehe :>
-    # Panel and future live visualization to have any data to read from.
     variables_snapshot = models.JSONField(default=dict)
     structure_snapshot = models.JSONField(null=True, blank=True, default=None)
+    # Whatever print() wrote during this specific line's execution.
+    output = models.TextField(blank=True, default="")
 
     class Meta:
         ordering = ["step_number"]

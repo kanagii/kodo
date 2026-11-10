@@ -7,24 +7,53 @@
 <section class="profile">
   <div class="container">
 
-    <div class="profile__header">
-      <div>
-        <h1>{{ session.code.title }}</h1>
-        <div class="profile__meta mono">traced {{ session.traced_at|date:"N j, Y H:i" }}</div>
+    <div class="trace-summary">
+      <div class="trace-summary__title-row">
+        <div>
+          <h1>{{ session.code.title }}</h1>
+          <div class="profile__meta mono">traced {{ session.traced_at|date:"N j, Y H:i" }}</div>
+        </div>
+        {% if session.error_message %}
+          <span class="status-pill status-pill--error">⚠ error</span>
+        {% else %}
+          <span class="status-pill status-pill--ok">✓ ran cleanly</span>
+        {% endif %}
       </div>
-    </div>
 
-    <div class="profile__grid">
-      <div class="profile__card">
-        <h3 class="mono">your guess</h3>
-        <div class="stat-row"><span>Time complexity</span><span>{{ session.predicted_time_complexity|default:"—" }}</span></div>
-        <div class="stat-row"><span>Space complexity</span><span>{{ session.predicted_space_complexity|default:"—" }}</span></div>
-      </div>
-      <div class="profile__card">
-        <h3 class="mono">what actually happened</h3>
-        <div class="stat-row"><span>Operations counted: </span><span>{{ session.operation_count }}</span></div>
-        <div class="stat-row"><span>Steps recorded: </span><span>{{ steps|length }}</span></div>
-        <div class="stat-row"><span>Data structure: </span><span>{{ session.code.get_data_structure_display }}</span></div>
+      {% if session.error_message %}
+        <div class="form-error" style="margin-top: 16px;">{{ session.error_message }}</div>
+      {% endif %}
+
+      <div class="trace-summary__stats">
+        <div class="trace-summary__stat">
+          <span class="trace-summary__stat-value mono">{{ session.operation_count }}</span>
+          <span class="trace-summary__stat-label mono">operations</span>
+        </div>
+        <div class="trace-summary__stat">
+          <span class="trace-summary__stat-value mono">{{ steps|length }}</span>
+          <span class="trace-summary__stat-label mono">steps recorded</span>
+        </div>
+
+        <div class="trace-summary__divider"></div>
+
+        <div class="trace-summary__guess">
+          <span class="trace-summary__guess-label mono">your guess</span>
+          <div class="trace-summary__guess-row">
+            <span class="mono">time</span>
+            <span class="badge">{{ session.predicted_time_complexity|default:"—" }}</span>
+          </div>
+          <div class="trace-summary__guess-row">
+            <span class="mono">space</span>
+            <span class="badge">{{ session.predicted_space_complexity|default:"—" }}</span>
+          </div>
+        </div>
+
+        <div class="trace-summary__divider"></div>
+
+        <div class="trace-summary__structure">
+          <span class="trace-summary__guess-label mono">data structure</span>
+          <span class="badge badge--active">{{ session.code.get_data_structure_display }}</span>
+        </div>
       </div>
     </div>
 
@@ -63,6 +92,10 @@
             <div class="visualizer__panel-label mono">variables</div>
             <div id="viz-vars" class="visualizer__vars"></div>
           </div>
+          <div class="visualizer__panel">
+            <div class="visualizer__panel-label mono">console output</div>
+            <pre id="viz-console" class="visualizer__console"></pre>
+          </div>
         </div>
       </div>
     </div>
@@ -85,7 +118,7 @@
 <script>
 (function () {
   const stepsEl = document.getElementById("viz-steps-data");
-  if (!stepsEl) return; // no steps recorded, nothing to animate
+  if (!stepsEl) return;
 
   const steps = JSON.parse(stepsEl.textContent);
   if (!steps.length) return;
@@ -98,6 +131,7 @@
   const codeLines = document.querySelectorAll("#viz-code .visualizer__line");
   const structureEl = document.getElementById("viz-structure");
   const varsEl = document.getElementById("viz-vars");
+  const consoleEl = document.getElementById("viz-console");
   const progressEl = document.getElementById("viz-progress");
   const prevBtn = document.getElementById("viz-prev");
   const nextBtn = document.getElementById("viz-next");
@@ -137,8 +171,6 @@
       return;
     }
 
-    // best-effort: any integer variable whose value is a valid index
-    // into this array is treated as a "pointer" into it
     const pointers = {};
     Object.entries(step.variables || {}).forEach(([key, value]) => {
       if (Number.isInteger(value) && value >= 0 && value < arr.length) {
@@ -169,11 +201,21 @@
     structureEl.appendChild(row);
   }
 
+  function renderConsole(uptoIndex) {
+    let text = "";
+    for (let i = 0; i <= uptoIndex; i++) {
+      text += steps[i].output || "";
+    }
+    consoleEl.textContent = text || "(nothing printed yet)";
+    consoleEl.scrollTop = consoleEl.scrollHeight;
+  }
+
   function render() {
     const step = steps[index];
     renderLine(step);
     renderVariables(step);
     renderStructure(step);
+    renderConsole(index);
     progressEl.textContent = `step ${index + 1} of ${steps.length}`;
     prevBtn.disabled = index === 0;
     nextBtn.disabled = index === steps.length - 1;
