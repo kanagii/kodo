@@ -1,0 +1,127 @@
+{% extends "shared/base.html" %}
+{% load static %}
+{% block title %}Dashboard — Kodo{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'css/dashboard/dashboard.css' %}">{% endblock %}
+{% block content %}
+
+<section class="profile">
+  <div class="container">
+
+    <div class="profile__header profile__header--split">
+      <div>
+        <h1>Dashboard</h1>
+        <div class="profile__meta mono">your tracing progress at a glance</div>
+      </div>
+      <a href="{% url 'tracer_editor' %}" class="btn btn--primary btn--sm">Trace a snippet</a>
+    </div>
+
+    <!-- summary numbers -->
+    <div class="dash-stats">
+      <div class="profile__card dash-stat">
+        <span class="dash-stat__value">{{ stats.traces }}</span>
+        <span class="dash-stat__label mono">traces run</span>
+      </div>
+      <div class="profile__card dash-stat">
+        <span class="dash-stat__value">{{ stats.snippets }}</span>
+        <span class="dash-stat__label mono">snippets</span>
+      </div>
+      <div class="profile__card dash-stat">
+        <span class="dash-stat__value">{{ stats.saved }}</span>
+        <span class="dash-stat__label mono">saved sessions</span>
+      </div>
+      <div class="profile__card dash-stat">
+        <span class="dash-stat__value">{{ stats.accuracy }}%</span>
+        <span class="dash-stat__label mono">big-o guesses right</span>
+      </div>
+    </div>
+
+    <div class="profile__grid dash-row">
+
+      <!-- recent traces -->
+      <div class="profile__card">
+        <div class="dash-card__head">
+          <h3 class="mono">recent traces</h3>
+          <a class="dash-card__link mono" href="{% url 'tracer_history' %}">all history</a>
+        </div>
+        {% for t in recent_traces %}
+          <div class="stat-row dash-trace">
+            <span class="dash-trace__main">
+              {# TODO: link to tracer_session_detail once real data is wired #}
+              <a href="#">{{ t.title }}</a>
+              <span class="dash-trace__meta mono">{{ t.structure }} · {{ t.when }}</span>
+            </span>
+            {% if t.error %}
+              <span class="status-pill status-pill--error">error</span>
+            {% else %}
+              <span class="mono">{{ t.ops }} ops</span>
+            {% endif %}
+          </div>
+        {% empty %}
+          <p class="profile__hint">No traces yet. <a href="{% url 'tracer_editor' %}">Trace your first snippet</a>.</p>
+        {% endfor %}
+      </div>
+
+      <!-- big-o accuracy -->
+      <div class="profile__card">
+        <div class="dash-card__head">
+          <h3 class="mono">big-o guess accuracy</h3>
+        </div>
+
+        <div class="dash-meter">
+          <div class="dash-meter__top">
+            <span>Time complexity</span>
+            <span class="mono">{{ accuracy.time.correct }} / {{ accuracy.time.total }}</span>
+          </div>
+          <div class="dash-bar"><div class="dash-bar__fill" style="width: {{ accuracy.time.pct }}%;"></div></div>
+        </div>
+
+        <div class="dash-meter">
+          <div class="dash-meter__top">
+            <span>Space complexity</span>
+            <span class="mono">{{ accuracy.space.correct }} / {{ accuracy.space.total }}</span>
+          </div>
+          <div class="dash-bar"><div class="dash-bar__fill" style="width: {{ accuracy.space.pct }}%;"></div></div>
+        </div>
+
+        <p class="profile__hint dash-note">Counts only traces where you made a guess before running.</p>
+      </div>
+
+      <!-- by structure -->
+      <div class="profile__card">
+        <div class="dash-card__head">
+          <h3 class="mono">traces by data structure</h3>
+        </div>
+        {% for s in by_structure %}
+          <div class="dash-meter">
+            <div class="dash-meter__top">
+              <span>{{ s.label }}</span>
+              <span class="mono">{{ s.count }}</span>
+            </div>
+            <div class="dash-bar"><div class="dash-bar__fill dash-bar__fill--edge" style="width: {{ s.pct }}%;"></div></div>
+          </div>
+        {% endfor %}
+      </div>
+
+      <!-- saved sessions -->
+      <div class="profile__card">
+        <div class="dash-card__head">
+          <h3 class="mono">saved sessions</h3>
+        </div>
+        {% for s in saved_sessions %}
+          <div class="stat-row dash-trace">
+            <span class="dash-trace__main">
+              <a href="#">{{ s.title }}</a>
+              <span class="dash-trace__meta mono">{{ s.structure }}</span>
+            </span>
+            <span class="badge badge--active">{{ s.time }}</span>
+          </div>
+        {% empty %}
+          <p class="profile__hint">Nothing saved yet. Save a trace to come back to it before an exam.</p>
+        {% endfor %}
+      </div>
+
+    </div>
+  </div>
+</section>
+
+{% endblock %}
