@@ -41,6 +41,7 @@ INSTALLED_APPS = [
     "apps.landing",
     "apps.login",
     "apps.register",
+    "apps.dashboard",
     "apps.profile",
     "apps.settings",
     "apps.tracer",

@@ -10,6 +10,7 @@ urlpatterns = [
     path("", include("apps.register.urls")),
     path("", include("apps.profile.urls")),
     path("", include("apps.settings.urls")),
+    path("", include("apps.dashboard.urls")),
     path("tracer/", include("apps.tracer.urls")),
 ]
 
