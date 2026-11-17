@@ -6,4 +6,5 @@ urlpatterns = [
     path("", views.editor, name="tracer_editor"),
     path("history/", views.history, name="tracer_history"),
     path("session/<int:session_id>/", views.session_detail, name="tracer_session_detail"),
+    path("session/<int:session_id>/save/", views.toggle_saved, name="tracer_toggle_saved"),
 ]

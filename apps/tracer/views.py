@@ -2,8 +2,10 @@
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import render, redirect, get_object_or_404
+from django.views.decorators.http import require_POST
 
 from .models import Code, TraceSession, TraceStep, DATA_STRUCTURE_CHOICES, COMPLEXITY_CHOICES
+from .complexity import estimate_complexity
 from .engine import run_traced_code
 
 
@@ -32,10 +34,18 @@ def editor(request):
 
         steps, error_message = run_traced_code(source_code)
 
+        # Only estimate Big-O for code that ran cleanly; a crashed or
+        # cut-off trace would give a misleading result.
+        actual_time, actual_space = ("", "")
+        if not error_message:
+            actual_time, actual_space = estimate_complexity(source_code)
+
         session = TraceSession.objects.create(
             code=code_obj,
             predicted_time_complexity=predicted_time,
             predicted_space_complexity=predicted_space,
+            actual_time_complexity=actual_time,
+            actual_space_complexity=actual_space,
             operation_count=len(steps),
             error_message=error_message or "",
         )
@@ -47,7 +57,7 @@ def editor(request):
                 line_number=step["line_number"],
                 variables_snapshot=step["variables"],
                 structure_snapshot=step["structure"],
-                output=step.get("output") or "",
+                output=step.get("output", ""),
             )
             for i, step in enumerate(steps)
         ])
@@ -89,7 +99,31 @@ def session_detail(request, session_id):
         "steps": steps_qs,
         "steps_data": steps_data,
         "source_lines": source_lines,
+        "time_match": _match(session.predicted_time_complexity, session.actual_time_complexity),
+        "space_match": _match(session.predicted_space_complexity, session.actual_space_complexity),
     })
+
+
+def _match(predicted, actual):
+    """True/False when a guess can be graded, None when it can't."""
+    if not predicted or not actual:
+        return None
+    return predicted == actual
+
+
+@login_required
+@require_POST
+def toggle_saved(request, session_id):
+    session = get_object_or_404(
+        TraceSession, id=session_id, code__user=request.user
+    )
+    session.is_saved = not session.is_saved
+    session.save(update_fields=["is_saved"])
+    messages.success(
+        request,
+        "Session saved." if session.is_saved else "Removed from saved sessions.",
+    )
+    return redirect("tracer_session_detail", session_id=session.id)
 
 
 @login_required
