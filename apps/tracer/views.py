@@ -47,7 +47,7 @@ def editor(request):
                 line_number=step["line_number"],
                 variables_snapshot=step["variables"],
                 structure_snapshot=step["structure"],
-                output=step.get("output", ""),
+                output=step.get("output") or "",
             )
             for i, step in enumerate(steps)
         ])
