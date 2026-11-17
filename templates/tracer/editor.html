@@ -1,3 +1,5 @@
+<!-- templates/tracer/editor.html -->
+
 {% extends "shared/base.html" %}
 {% load static %}
 {% block title %}Tracer — Kodo{% endblock %}
@@ -88,11 +90,14 @@
 
 <script>
 /* ---------- Custom dropdowns ---------------------------------------------
-   Replaces the browser's native <select> popup (which CSS can't restyle)
-   with our own. The real <select> stays in the DOM, hidden, and is kept
-   in sync — so the form still submits exactly as before.
+   Replaces the browser's native <select> popup with our own. The real
+   <select> stays in the DOM, hidden, and is kept in sync, so the form
+   still submits exactly as before. Supports mouse and keyboard
+   (Arrow keys, Home/End, Enter/Space to pick, Esc to close).
    ------------------------------------------------------------------------- */
 (function () {
+  const allDropdowns = [];
+
   function createCustomSelect(select) {
     const wrapper = document.createElement("div");
     wrapper.className = "custom-select";
@@ -109,7 +114,7 @@
     const chevron = document.createElement("span");
     chevron.className = "custom-select__chevron";
     chevron.setAttribute("aria-hidden", "true");
-    chevron.textContent = "▾";
+    chevron.textContent = "\u25BE";
 
     trigger.appendChild(valueSpan);
     trigger.appendChild(chevron);
@@ -118,31 +123,49 @@
     list.className = "custom-select__options";
     list.setAttribute("role", "listbox");
 
+    const items = [];
+    let activeIndex = -1;
+
+    function selectedIndex() {
+      return Math.max(0, select.selectedIndex);
+    }
+
+    function setActive(i) {
+      activeIndex = i;
+      items.forEach((li, idx) => li.classList.toggle("custom-select__option--active", idx === i));
+      if (items[i]) items[i].scrollIntoView({ block: "nearest" });
+    }
+
+    function isOpen() {
+      return list.classList.contains("is-open");
+    }
+
     function closeDropdown() {
       list.classList.remove("is-open");
       trigger.classList.remove("is-open");
       trigger.setAttribute("aria-expanded", "false");
     }
 
-    function toggleDropdown() {
-      const willOpen = !list.classList.contains("is-open");
-      // close any other open dropdown first
-      document.querySelectorAll(".custom-select__options.is-open").forEach(el => {
-        if (el !== list) {
-          el.classList.remove("is-open");
-          const otherTrigger = el.parentElement.querySelector(".custom-select__trigger");
-          if (otherTrigger) {
-            otherTrigger.classList.remove("is-open");
-            otherTrigger.setAttribute("aria-expanded", "false");
-          }
-        }
-      });
-      list.classList.toggle("is-open", willOpen);
-      trigger.classList.toggle("is-open", willOpen);
-      trigger.setAttribute("aria-expanded", String(willOpen));
+    function openDropdown() {
+      allDropdowns.forEach(d => { if (d !== api) d.close(); });
+      list.classList.add("is-open");
+      trigger.classList.add("is-open");
+      trigger.setAttribute("aria-expanded", "true");
+      setActive(selectedIndex());
     }
 
-    Array.from(select.options).forEach(opt => {
+    function choose(i) {
+      const opt = select.options[i];
+      select.value = opt.value;
+      select.dispatchEvent(new Event("change", { bubbles: true }));
+      valueSpan.textContent = opt.textContent;
+      items.forEach((li, idx) =>
+        li.classList.toggle("custom-select__option--selected", idx === i)
+      );
+      closeDropdown();
+    }
+
+    Array.from(select.options).forEach((opt, i) => {
       const li = document.createElement("li");
       li.className = "custom-select__option";
       li.setAttribute("role", "option");
@@ -154,32 +177,53 @@
         valueSpan.textContent = opt.textContent;
       }
 
-      li.addEventListener("click", function () {
-        select.value = opt.value;
-        select.dispatchEvent(new Event("change", { bubbles: true }));
-        valueSpan.textContent = opt.textContent;
-        list.querySelectorAll(".custom-select__option").forEach(o =>
-          o.classList.remove("custom-select__option--selected")
-        );
-        li.classList.add("custom-select__option--selected");
-        closeDropdown();
-      });
-
+      li.addEventListener("click", () => choose(i));
+      li.addEventListener("mouseenter", () => setActive(i));
       list.appendChild(li);
+      items.push(li);
     });
 
     trigger.addEventListener("click", function (e) {
       e.stopPropagation();
-      toggleDropdown();
+      if (isOpen()) closeDropdown(); else openDropdown();
+    });
+
+    trigger.addEventListener("keydown", function (e) {
+      const last = items.length - 1;
+      if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+        e.preventDefault();
+        if (!isOpen()) { openDropdown(); return; }
+        const step = e.key === "ArrowDown" ? 1 : -1;
+        setActive(Math.min(last, Math.max(0, activeIndex + step)));
+      } else if (e.key === "Home" && isOpen()) {
+        e.preventDefault();
+        setActive(0);
+      } else if (e.key === "End" && isOpen()) {
+        e.preventDefault();
+        setActive(last);
+      } else if ((e.key === "Enter" || e.key === " ") && isOpen()) {
+        e.preventDefault();
+        choose(activeIndex >= 0 ? activeIndex : selectedIndex());
+      } else if (e.key === "Escape" && isOpen()) {
+        e.preventDefault();
+        closeDropdown();
+      } else if (e.key === "Tab") {
+        closeDropdown();
+      }
     });
 
     document.addEventListener("click", function (e) {
       if (!wrapper.contains(e.target)) closeDropdown();
     });
 
-    document.addEventListener("keydown", function (e) {
-      if (e.key === "Escape") closeDropdown();
-    });
+    // clicking the field's <label> focuses the dropdown button
+    if (select.id) {
+      const label = document.querySelector('label[for="' + select.id + '"]');
+      if (label) label.addEventListener("click", () => trigger.focus());
+    }
+
+    const api = { close: closeDropdown };
+    allDropdowns.push(api);
 
     wrapper.appendChild(trigger);
     wrapper.appendChild(list);
@@ -208,6 +252,20 @@
     for (let i = 1; i <= lineCount; i++) out += i + "\n";
     gutter.textContent = out.trim();
     gutter.scrollTop = textarea.scrollTop;
+  }
+
+  // Delete [from, to). Uses the browser's edit command first so Ctrl+Z
+  // can undo it; falls back to a plain value edit if that isn't available.
+  function deleteRange(from, to) {
+    textarea.focus();
+    textarea.setSelectionRange(from, to);
+    let done = false;
+    try { done = document.execCommand("delete"); } catch (err) { done = false; }
+    if (!done) {
+      const v = textarea.value;
+      textarea.value = v.slice(0, from) + v.slice(to);
+      textarea.selectionStart = textarea.selectionEnd = from;
+    }
   }
 
   textarea.addEventListener("input", updateGutter);
@@ -286,15 +344,29 @@
       return;
     }
 
-    // --- Backspace between an empty pair deletes both -----------------
+    // --- Backspace ----------------------------------------------------
     if (e.key === "Backspace" && start === end && start > 0) {
+      // (a) between an empty pair: delete both characters
       const prevChar = value[start - 1];
       const nextChar = value[start];
-      if (PAIRS[prevChar] === nextChar) {
+      if (PAIRS[prevChar] !== undefined && PAIRS[prevChar] === nextChar) {
         e.preventDefault();
         textarea.value = value.slice(0, start - 1) + value.slice(start + 1);
         textarea.selectionStart = textarea.selectionEnd = start - 1;
         updateGutter();
+        return;
+      }
+
+      // (b) cursor sits in a line's leading spaces: remove back to the
+      //     previous 4-space stop in one press
+      const lineStart = value.lastIndexOf("\n", start - 1) + 1;
+      const before = value.slice(lineStart, start);
+      if (before.length > 0 && /^ +$/.test(before)) {
+        e.preventDefault();
+        const removeCount = (before.length % TAB.length) || TAB.length;
+        deleteRange(start - removeCount, start);
+        updateGutter();
+        return;
       }
       return;
     }
