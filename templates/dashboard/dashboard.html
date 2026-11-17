@@ -1,3 +1,4 @@
+<!-- templates/dashboard/dashboard.html -->
 {% extends "shared/base.html" %}
 {% load static %}
 {% block title %}Dashboard — Kodo{% endblock %}
@@ -30,7 +31,7 @@
         <span class="dash-stat__label mono">saved sessions</span>
       </div>
       <div class="profile__card dash-stat">
-        <span class="dash-stat__value">{{ stats.accuracy }}%</span>
+        <span class="dash-stat__value">{% if stats.accuracy is not None %}{{ stats.accuracy }}%{% else %}—{% endif %}</span>
         <span class="dash-stat__label mono">big-o guesses right</span>
       </div>
     </div>
@@ -46,9 +47,8 @@
         {% for t in recent_traces %}
           <div class="stat-row dash-trace">
             <span class="dash-trace__main">
-              {# TODO: link to tracer_session_detail once real data is wired #}
-              <a href="#">{{ t.title }}</a>
-              <span class="dash-trace__meta mono">{{ t.structure }} · {{ t.when }}</span>
+              <a href="{% url 'tracer_session_detail' session_id=t.id %}">{{ t.title }}</a>
+              <span class="dash-trace__meta mono">{{ t.structure }} · {{ t.when|date:"M j, H:i" }}</span>
             </span>
             {% if t.error %}
               <span class="status-pill status-pill--error">error</span>
@@ -70,20 +70,22 @@
         <div class="dash-meter">
           <div class="dash-meter__top">
             <span>Time complexity</span>
-            <span class="mono">{{ accuracy.time.correct }} / {{ accuracy.time.total }}</span>
+            <span class="mono">{% if accuracy.time.total %}{{ accuracy.time.correct }} / {{ accuracy.time.total }}{% else %}—{% endif %}</span>
           </div>
-          <div class="dash-bar"><div class="dash-bar__fill" style="width: {{ accuracy.time.pct }}%;"></div></div>
+          <div class="dash-bar"><div class="dash-bar__fill" style="width: {{ accuracy.time.pct|default:0 }}%;"></div></div>
         </div>
 
         <div class="dash-meter">
           <div class="dash-meter__top">
             <span>Space complexity</span>
-            <span class="mono">{{ accuracy.space.correct }} / {{ accuracy.space.total }}</span>
+            <span class="mono">{% if accuracy.space.total %}{{ accuracy.space.correct }} / {{ accuracy.space.total }}{% else %}—{% endif %}</span>
           </div>
-          <div class="dash-bar"><div class="dash-bar__fill" style="width: {{ accuracy.space.pct }}%;"></div></div>
+          <div class="dash-bar"><div class="dash-bar__fill" style="width: {{ accuracy.space.pct|default:0 }}%;"></div></div>
         </div>
 
-        <p class="profile__hint dash-note">Counts only traces where you made a guess before running.</p>
+        <p class="profile__hint dash-note">
+          {% if guesses_made %}You've made {{ guesses_made }} time guess{{ guesses_made|pluralize:"es" }} so far. {% endif %}Guesses are marked right or wrong once Kodo can work out a trace's actual Big-O, which is coming soon.
+        </p>
       </div>
 
       <!-- by structure -->
@@ -99,6 +101,8 @@
             </div>
             <div class="dash-bar"><div class="dash-bar__fill dash-bar__fill--edge" style="width: {{ s.pct }}%;"></div></div>
           </div>
+        {% empty %}
+          <p class="profile__hint">No traces yet, so there is nothing to break down.</p>
         {% endfor %}
       </div>
 
@@ -110,13 +114,13 @@
         {% for s in saved_sessions %}
           <div class="stat-row dash-trace">
             <span class="dash-trace__main">
-              <a href="#">{{ s.title }}</a>
+              <a href="{% url 'tracer_session_detail' session_id=s.id %}">{{ s.title }}</a>
               <span class="dash-trace__meta mono">{{ s.structure }}</span>
             </span>
             <span class="badge badge--active">{{ s.time }}</span>
           </div>
         {% empty %}
-          <p class="profile__hint">Nothing saved yet. Save a trace to come back to it before an exam.</p>
+          <p class="profile__hint">Nothing saved yet. Saving sessions is coming soon.</p>
         {% endfor %}
       </div>
 
