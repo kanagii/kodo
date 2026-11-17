@@ -1,3 +1,4 @@
+<!-- templates/tracer/history.html -->
 {% extends "shared/base.html" %}
 {% load static %}
 {% block title %}History — Kodo{% endblock %}
@@ -19,7 +20,7 @@
         {% for session in sessions %}
           <div class="stat-row">
             <span>
-              <a href="{% url 'tracer_session_detail' session.id %}">{{ session.code.title }}</a>
+              {% if session.is_saved %}<span class="mono" style="color: var(--accent);">★</span> {% endif %}<a href="{% url 'tracer_session_detail' session.id %}">{{ session.code.title }}</a>
               <span class="mono" style="color: var(--text-faint); font-size: 12px;"> · {{ session.traced_at|date:"N j, H:i" }}</span>
             </span>
             <span class="mono">

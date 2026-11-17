@@ -1,3 +1,4 @@
+<!-- templates/tracer/session_detail.html -->
 {% extends "shared/base.html" %}
 {% load static %}
 {% block title %}Trace result — Kodo{% endblock %}
@@ -45,6 +46,20 @@
           <div class="trace-summary__guess-row">
             <span class="mono">space</span>
             <span class="badge">{{ session.predicted_space_complexity|default:"—" }}</span>
+          </div>
+        </div>
+
+        <div class="trace-summary__divider"></div>
+
+        <div class="trace-summary__guess">
+          <span class="trace-summary__guess-label mono">kodo's estimate</span>
+          <div class="trace-summary__guess-row">
+            <span class="mono">time</span>
+            <span class="badge {% if time_match is True %}badge--ok{% elif time_match is False %}badge--miss{% endif %}">{{ session.actual_time_complexity|default:"—" }}</span>
+          </div>
+          <div class="trace-summary__guess-row">
+            <span class="mono">space</span>
+            <span class="badge {% if space_match is True %}badge--ok{% elif space_match is False %}badge--miss{% endif %}">{{ session.actual_space_complexity|default:"—" }}</span>
           </div>
         </div>
 
@@ -106,6 +121,10 @@
     {% endif %}
 
     <div style="margin-top: 24px;">
+      <form method="post" action="{% url 'tracer_toggle_saved' session.id %}" class="trace-summary__save-form">
+        {% csrf_token %}
+        <button type="submit" class="btn {% if session.is_saved %}btn--primary{% else %}btn--ghost{% endif %} btn--sm">{% if session.is_saved %}★ Saved{% else %}☆ Save session{% endif %}</button>
+      </form>
       <a href="{% url 'tracer_editor' %}" class="btn btn--ghost btn--sm">Trace another snippet</a>
       <a href="{% url 'tracer_history' %}" class="btn btn--ghost btn--sm">View history</a>
     </div>

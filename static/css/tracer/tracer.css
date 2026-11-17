@@ -593,3 +593,31 @@
   content: "\2713";
   font-size: 12px;
 }
+
+/* ==========================================================================
+   Estimate badges, save button and flash messages
+   ========================================================================== */
+
+.badge--ok {
+  border-color: var(--edge);
+  color: var(--edge);
+  background: var(--edge-soft);
+}
+
+.badge--miss {
+  border-color: var(--danger);
+  color: var(--danger);
+  background: var(--danger-soft);
+}
+
+.trace-summary__save-form { display: inline; }
+
+.form-success {
+  background: var(--edge-soft);
+  border: 1px solid var(--edge);
+  color: var(--edge);
+  border-radius: var(--radius);
+  padding: 11px 13px;
+  font-size: 13.5px;
+  margin-bottom: 20px;
+}
