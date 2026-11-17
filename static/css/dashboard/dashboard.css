@@ -2,6 +2,7 @@
    Dashboard page
    Uses the tokens from shared/base.css. Page-shell classes are copied here
    (same as tracer.css) so each page keeps its own stylesheet.
+   static/css/dashboard/dashboard.css
    ========================================================================== */
 
 

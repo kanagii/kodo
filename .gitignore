@@ -4,6 +4,9 @@ venv/
 # Database
 db.sqlite3
 
+# Progress
+AGBON_FINAL_PROJECT/
+
 # Python cache
 __pycache__/
 *.pyc
