@@ -22,12 +22,23 @@ traced code in an isolated subprocess or container instead.
 import sys
 import time
 import json
+import types
 
 
 MAX_STEPS = 500
 MAX_SECONDS = 3
 MAX_OUTPUT_CHARS = 10000
 TRACE_FILENAME = "<kodo_trace>"
+MAX_NODES = 50  # cap on nodes recorded per step so snapshots stay small
+
+# Attribute names students commonly use for a node's link and payload.
+NEXT_ATTRS = ("next", "nxt", "link")
+VALUE_ATTRS = ("value", "val", "data", "key", "item", "element")
+
+_NOT_NODES = (
+    type, types.FunctionType, types.BuiltinFunctionType, types.ModuleType,
+    str, bytes, int, float, bool, list, tuple, dict, set,
+)
 
 
 class TraceLimitExceeded(Exception):
@@ -46,32 +57,169 @@ class Node:
         return f"Node({self.value!r})"
 
 
+def _next_attr(obj):
+    """Name of the attribute that links to the next node, or None if obj
+    isn't node-like (works for the provided Node and student-written ones)."""
+    if obj is None or isinstance(obj, _NOT_NODES):
+        return None
+    for name in NEXT_ATTRS:
+        if hasattr(obj, name):
+            return name
+    return None
+
+
+def _walk(start, limit=MAX_NODES):
+    """Yield nodes from start along the next links; stops at None, at a
+    cycle, or at the limit."""
+    seen = set()
+    node = start
+    while node is not None and id(node) not in seen and len(seen) < limit:
+        attr = _next_attr(node)
+        if attr is None:
+            break
+        seen.add(id(node))
+        yield node
+        node = getattr(node, attr, None)
+
+
+def _node_value(node):
+    for name in VALUE_ATTRS:
+        if hasattr(node, name):
+            raw = getattr(node, name)
+            break
+    else:
+        raw = None
+        for key, val in getattr(node, "__dict__", {}).items():
+            if key not in NEXT_ATTRS:
+                raw = val
+                break
+    if _next_attr(raw) is not None:
+        return repr(raw)
+    return _json_safe(raw)
+
+
+def _list_head(obj):
+    """For wrapper classes like `class LinkedList: self.head = ...`:
+    returns (head_node_or_None, True) if obj looks like one, else (None, False)."""
+    if obj is None or isinstance(obj, _NOT_NODES) or _next_attr(obj) is not None:
+        return None, False
+    if hasattr(obj, "head"):
+        head = getattr(obj, "head")
+        if head is None or _next_attr(head) is not None:
+            return head, True
+    return None, False
+
+
 def _json_safe(value):
     try:
         json.dumps(value)
         return value
     except (TypeError, ValueError):
-        if isinstance(value, Node):
-            out = []
-            seen = set()
-            node = value
-            while node is not None and id(node) not in seen:
-                seen.add(id(node))
-                out.append(node.value)
-                node = node.next
-            return out
+        if _next_attr(value) is not None:
+            return [_node_value(n) for n in _walk(value)]
+        head, is_wrapper = _list_head(value)
+        if is_wrapper:
+            return [_node_value(n) for n in _walk(head)]
         return repr(value)
+
+
+def _hidden(value):
+    """Classes, functions and modules are clutter in the variables panel."""
+    return isinstance(value, (type, types.FunctionType, types.ModuleType))
 
 
 def _snapshot_variables(locals_dict):
     return {
         key: _json_safe(value)
         for key, value in locals_dict.items()
-        if not key.startswith("__")
+        if not key.startswith("__") and not _hidden(value)
     }
 
 
+def _linked_list_snapshot(locals_dict):
+    """Returns (label, snapshot) when any local is a node (or a list wrapper
+    holding one), else None. The snapshot lists every chain of nodes, which
+    variable points at which node, and which variables are None."""
+    named = []       # (variable label, node)
+    null_ptrs = []
+    for key, value in locals_dict.items():
+        if key.startswith("__"):
+            continue
+        if _next_attr(value) is not None:
+            named.append((key, value))
+            continue
+        head, is_wrapper = _list_head(value)
+        if is_wrapper:
+            if head is None:
+                null_ptrs.append(key + ".head")
+            else:
+                named.append((key + ".head", head))
+        elif value is None:
+            null_ptrs.append(key)
+    if not named:
+        return None
+
+    ptrs = {}
+    for name, node in named:
+        ptrs.setdefault(id(node), []).append(name)
+
+    nodes = {}  # every node reachable from a variable, in discovery order
+    for _, node in named:
+        for n in _walk(node):
+            if len(nodes) >= MAX_NODES:
+                break
+            nodes.setdefault(id(n), n)
+
+    pointed_to = set()
+    for n in nodes.values():
+        nxt = getattr(n, _next_attr(n), None)
+        if nxt is not None and id(nxt) in nodes:
+            pointed_to.add(id(nxt))
+
+    chains = []
+    visited = set()
+
+    def build_chain(start):
+        items, index = [], {}
+        tail, cycle_to = "none", None
+        node = start
+        while node is not None:
+            nid = id(node)
+            if nid in index:
+                tail, cycle_to = "cycle", index[nid]
+                break
+            if nid in visited:
+                tail = "shared"
+                break
+            attr = _next_attr(node)
+            if attr is None:
+                break
+            if len(items) >= MAX_NODES:
+                tail = "truncated"
+                break
+            index[nid] = len(items)
+            visited.add(nid)
+            items.append({"v": _node_value(node), "ptrs": ptrs.get(nid, [])})
+            node = getattr(node, attr, None)
+        chains.append({"nodes": items, "tail": tail, "cycle_to": cycle_to})
+
+    for nid, n in nodes.items():          # real heads first
+        if nid not in pointed_to and nid not in visited:
+            build_chain(n)
+    for nid, n in nodes.items():          # then anything left (pure cycles)
+        if nid not in visited:
+            build_chain(n)
+
+    names = [name for name, _ in named]
+    label = "head" if "head" in names else names[0]
+    return label, {"kind": "linked_list", "chains": chains, "null_ptrs": null_ptrs}
+
+
 def _guess_structure_snapshot(locals_dict):
+    linked = _linked_list_snapshot(locals_dict)
+    if linked is not None:
+        label, snapshot = linked
+        return {label: snapshot}
     for key, value in locals_dict.items():
         if key.startswith("__"):
             continue
@@ -121,10 +269,16 @@ def run_traced_code(source_code):
         "zip": zip, "abs": abs, "isinstance": isinstance,
         "print": captured_print,
         "True": True, "False": False, "None": None,
+        # needed so students can write their own `class Node:` / `class LinkedList:`
+        "__build_class__": __build_class__, "object": object, "super": super,
+        "Exception": Exception, "ValueError": ValueError, "IndexError": IndexError,
+        "KeyError": KeyError, "TypeError": TypeError,
     }
 
-    exec_globals = {"__builtins__": safe_builtins, "Node": Node}
-    exec_locals = {}
+    # One shared namespace (not separate globals/locals) so functions and
+    # classes defined in the snippet can see each other, e.g. a student's own
+    # Node used inside their own append() function.
+    exec_globals = {"__builtins__": safe_builtins, "__name__": "__kodo__", "Node": Node}
 
     def trace_calls(frame, event, arg):
         if frame.f_code.co_filename != TRACE_FILENAME:
@@ -151,7 +305,7 @@ def run_traced_code(source_code):
     try:
         compiled = compile(source_code, TRACE_FILENAME, "exec")
         sys.settrace(trace_calls)
-        exec(compiled, exec_globals, exec_locals)
+        exec(compiled, exec_globals)
     except TraceLimitExceeded as e:
         error_message = str(e)
     except Exception as e:
