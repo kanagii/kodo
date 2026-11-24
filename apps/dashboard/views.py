@@ -1,6 +1,6 @@
 # apps/dashboard/views.py
 from django.contrib.auth.decorators import login_required
-from django.db.models import Count, Q
+from django.db.models import Count, OuterRef, Q, Subquery
 from django.shortcuts import render
 
 from apps.tracer.models import Code, TraceSession, DATA_STRUCTURE_CHOICES
@@ -60,6 +60,7 @@ def dashboard(request):
         for g in grouped
     ]
 
+    # JOIN: each TraceSession together with its Code (tracer_tracesession JOIN tracer_code)
     recent_traces = [
         {
             "id": s.id,
@@ -72,14 +73,33 @@ def dashboard(request):
         for s in sessions.select_related("code").order_by("-traced_at")[:5]
     ]
 
+    # SUBQUERY: inner query = code ids that have a saved session,
+    # outer query = the Code rows whose id is in that list
+    saved_code_ids = TraceSession.objects.filter(is_saved=True).values("code_id")
+
+    # second subquery: newest saved session id for each code, used for the link
+    latest_saved = (
+        TraceSession.objects
+        .filter(code=OuterRef("pk"), is_saved=True)
+        .order_by("-traced_at")
+        .values("id")[:1]
+    )
+
+    saved_codes = (
+        Code.objects
+        .filter(user=request.user, id__in=Subquery(saved_code_ids))
+        .annotate(session_id=Subquery(latest_saved))
+        .order_by("-created_at")[:5]
+    )
+
     saved_sessions = [
         {
-            "id": s.id,
-            "title": s.code.title,
-            "structure": _structure_label(s.code.data_structure),
-            "time": s.actual_time_complexity or s.predicted_time_complexity or "—",
+            "id": c.session_id,
+            "title": c.title,
+            "structure": _structure_label(c.data_structure),
+            "created": c.created_at.strftime("%b %d"),
         }
-        for s in sessions.filter(is_saved=True).select_related("code").order_by("-traced_at")[:5]
+        for c in saved_codes
     ]
 
     return render(request, "dashboard/dashboard.html", {

@@ -38,7 +38,7 @@
 
     <div class="profile__grid dash-row">
 
-      <!-- recent traces -->
+      <!-- recent traces (JOIN: TraceSession + Code) -->
       <div class="profile__card">
         <div class="dash-card__head">
           <h3 class="mono">recent traces</h3>
@@ -106,7 +106,7 @@
         {% endfor %}
       </div>
 
-      <!-- saved sessions -->
+      <!-- saved sessions (SUBQUERY: Code ids that have a saved TraceSession) -->
       <div class="profile__card">
         <div class="dash-card__head">
           <h3 class="mono">saved sessions</h3>
@@ -115,9 +115,9 @@
           <div class="stat-row dash-trace">
             <span class="dash-trace__main">
               <a href="{% url 'tracer_session_detail' session_id=s.id %}">{{ s.title }}</a>
-              <span class="dash-trace__meta mono">{{ s.structure }}</span>
+              <span class="dash-trace__meta mono">saved snippet · {{ s.created }}</span>
             </span>
-            <span class="badge badge--active">{{ s.time }}</span>
+            <span class="badge badge--active">{{ s.structure }}</span>
           </div>
         {% empty %}
           <p class="profile__hint">Nothing saved yet. Saving sessions is coming soon.</p>
