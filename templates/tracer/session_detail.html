@@ -178,20 +178,36 @@
     });
   }
 
+  function fmt(v) {
+    if (v === null || v === undefined) return "None";
+    if (v === true) return "True";
+    if (v === false) return "False";
+    if (typeof v === "object") return JSON.stringify(v);
+    return String(v);
+  }
+
   function renderStructure(step) {
     structureEl.innerHTML = "";
     if (!step.structure) {
-      structureEl.innerHTML = '<p class="profile__hint">No array detected at this step.</p>';
+      structureEl.innerHTML = '<p class="profile__hint">No array or linked list detected at this step.</p>';
       return;
     }
-    const [varName, arr] = Object.entries(step.structure)[0];
+    const [varName, value] = Object.entries(step.structure)[0];
+    if (value && !Array.isArray(value) && value.kind === "linked_list") {
+      renderLinkedList(varName, value);
+    } else {
+      renderArray(varName, value);
+    }
+  }
+
+  function renderArray(varName, arr) {
     if (!Array.isArray(arr)) {
       structureEl.innerHTML = '<p class="profile__hint">Structure value isn\'t a simple list yet.</p>';
       return;
     }
 
     const pointers = {};
-    Object.entries(step.variables || {}).forEach(([key, value]) => {
+    Object.entries(steps[index].variables || {}).forEach(([key, value]) => {
       if (Number.isInteger(value) && value >= 0 && value < arr.length) {
         (pointers[value] = pointers[value] || []).push(key);
       }
@@ -218,6 +234,75 @@
       row.appendChild(wrap);
     });
     structureEl.appendChild(row);
+  }
+
+  function renderLinkedList(varName, ll) {
+    const label = document.createElement("div");
+    label.className = "mono visualizer__structure-label";
+    label.textContent = varName;
+    structureEl.appendChild(label);
+
+    function arrow() {
+      const a = document.createElement("div");
+      a.className = "ll-arrow";
+      a.textContent = "\u2192";
+      return a;
+    }
+
+    ll.chains.forEach(chain => {
+      const row = document.createElement("div");
+      row.className = "ll-row";
+
+      chain.nodes.forEach((node, i) => {
+        const wrap = document.createElement("div");
+        wrap.className = "ll-node-wrap";
+
+        const box = document.createElement("div");
+        box.className = "ll-node" + (node.ptrs.length ? " ll-node--active" : "");
+        const val = document.createElement("span");
+        val.className = "ll-node__val";
+        val.textContent = fmt(node.v);
+        const nxt = document.createElement("span");
+        nxt.className = "ll-node__next";
+        nxt.textContent = "\u2022";
+        box.appendChild(val);
+        box.appendChild(nxt);
+        wrap.appendChild(box);
+
+        const ptr = document.createElement("div");
+        ptr.className = "mono visualizer__pointer-label";
+        ptr.textContent = node.ptrs.join(", ");
+        wrap.appendChild(ptr);
+
+        row.appendChild(wrap);
+        if (i < chain.nodes.length - 1) row.appendChild(arrow());
+      });
+
+      row.appendChild(arrow());
+      const end = document.createElement("div");
+      if (chain.tail === "cycle") {
+        end.className = "ll-note mono";
+        end.textContent = "\u21A9 back to node " + (chain.cycle_to + 1);
+      } else if (chain.tail === "shared") {
+        end.className = "ll-note mono";
+        end.textContent = "\u21AA joins another chain";
+      } else if (chain.tail === "truncated") {
+        end.className = "ll-note mono";
+        end.textContent = "\u2026 (list continues)";
+      } else {
+        end.className = "ll-null mono";
+        end.textContent = "None";
+      }
+      row.appendChild(end);
+      structureEl.appendChild(row);
+    });
+
+    if (ll.null_ptrs && ll.null_ptrs.length) {
+      const nulls = document.createElement("div");
+      nulls.className = "ll-nulls mono";
+      nulls.textContent = "None: " + ll.null_ptrs.join(", ");
+      structureEl.appendChild(nulls);
+    }
   }
 
   function renderConsole(uptoIndex) {
