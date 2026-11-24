@@ -73,11 +73,8 @@ def dashboard(request):
         for s in sessions.select_related("code").order_by("-traced_at")[:5]
     ]
 
-    # SUBQUERY: inner query = code ids that have a saved session,
-    # outer query = the Code rows whose id is in that list
     saved_code_ids = TraceSession.objects.filter(is_saved=True).values("code_id")
 
-    # second subquery: newest saved session id for each code, used for the link
     latest_saved = (
         TraceSession.objects
         .filter(code=OuterRef("pk"), is_saved=True)
